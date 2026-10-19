@@ -1,0 +1,112 @@
+# Strapi Community Edition PoC — public banking website
+# All images are pinned for reproducibility (see docs/00-runbook.md §1).
+#
+#   docker compose up -d --build                     # db + cms + web (development mode)
+#   docker compose --profile proxy up -d             # + nginx reverse proxy (admin allow-list, rate limits)
+#   docker compose --profile minio up -d             # + MinIO (S3-compatible media storage test)
+#   docker compose --profile loadtest run --rm k6    # basic load test against the public API
+
+name: strapi-banking-poc
+
+services:
+  db:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Database isolation test: the DB is NOT published to the host. Only the cms container can reach it.
+    networks: [backend]
+
+  cms:
+    build:
+      context: ./cms
+      target: ${CMS_BUILD_TARGET:-development}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "1337:1337"
+    volumes:
+      # Source is mounted in development so the Content-Type Builder can write schema files back to Git.
+      - ./cms/config:/opt/app/config
+      - ./cms/src:/opt/app/src
+      - ./cms/scripts:/opt/app/scripts
+      - uploads:/opt/app/public/uploads
+    networks: [backend, frontend]
+
+  web:
+    build:
+      context: ./web
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      STRAPI_URL: http://cms:1337
+    depends_on:
+      - cms
+    ports:
+      - "3000:3000"
+    networks: [frontend]
+
+  # ---- Optional: reverse proxy with /admin IP allow-list, rate limiting and upload size limits ----
+  proxy:
+    image: nginx:1.29.1-alpine
+    profiles: ["proxy"]
+    depends_on: [cms, web]
+    ports:
+      - "8080:8080"   # public website
+      - "8081:8081"   # CMS (API + /admin, admin restricted by IP)
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks: [frontend]
+
+  # ---- Optional: S3-compatible media storage test ----
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    profiles: ["minio"]
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_ACCESS_SECRET}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    networks: [frontend]
+
+  # ---- Optional: basic load test of the public API / website ----
+  k6:
+    image: grafana/k6:1.2.3
+    profiles: ["loadtest"]
+    volumes:
+      - ./scripts/load:/scripts:ro
+    environment:
+      CMS_URL: http://cms:1337
+      WEB_URL: http://web:3000
+    command: run /scripts/k6-public-api.js
+    networks: [frontend]
+
+volumes:
+  db-data:
+  uploads:
+  minio-data:
+
+networks:
+  backend:
+  frontend:

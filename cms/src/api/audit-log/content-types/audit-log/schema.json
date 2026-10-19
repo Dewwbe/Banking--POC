@@ -1,0 +1,111 @@
+{
+  "kind": "collectionType",
+  "collectionName": "poc_audit_logs",
+  "info": {
+    "singularName": "audit-log",
+    "pluralName": "audit-logs",
+    "displayName": "Audit Log (PoC)",
+    "description": "Append-only, hash-chained audit trail written by src/poc/audit.ts. Not exposed on the content API."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": false
+    },
+    "i18n": {
+      "localized": false
+    }
+  },
+  "attributes": {
+    "sequence": {
+      "type": "biginteger",
+      "required": true,
+      "unique": true
+    },
+    "occurredAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "environment": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "required": true
+    },
+    "outcome": {
+      "type": "enumeration",
+      "enum": [
+        "allowed",
+        "denied"
+      ],
+      "required": true
+    },
+    "reason": {
+      "type": "text"
+    },
+    "channel": {
+      "type": "enumeration",
+      "enum": [
+        "admin",
+        "content-api",
+        "system"
+      ],
+      "required": true
+    },
+    "actorId": {
+      "type": "string"
+    },
+    "actorEmail": {
+      "type": "string"
+    },
+    "actorRoles": {
+      "type": "json"
+    },
+    "contentType": {
+      "type": "string"
+    },
+    "targetDocumentId": {
+      "type": "string"
+    },
+    "targetLocale": {
+      "type": "string"
+    },
+    "workflowStageBefore": {
+      "type": "string"
+    },
+    "workflowStageAfter": {
+      "type": "string"
+    },
+    "changedFields": {
+      "type": "json"
+    },
+    "before": {
+      "type": "json"
+    },
+    "after": {
+      "type": "json"
+    },
+    "contentHash": {
+      "type": "string"
+    },
+    "prevEntryHash": {
+      "type": "string"
+    },
+    "entryHash": {
+      "type": "string",
+      "required": true
+    },
+    "clientIp": {
+      "type": "string"
+    },
+    "userAgent": {
+      "type": "text"
+    }
+  }
+}

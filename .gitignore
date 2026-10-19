@@ -1,0 +1,16 @@
+.env
+node_modules/
+**/node_modules/
+cms/.tmp/
+cms/.cache/
+cms/build/
+cms/dist/
+cms/public/uploads/*
+!cms/public/uploads/.gitkeep
+cms/types/generated/
+web/.next/
+web/out/
+backups/*
+!backups/.gitkeep
+*.log
+.DS_Store

@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_contact_branch_links",
+  "options": {},
+  "info": {
+    "displayName": "Branch link",
+    "icon": "pinMap"
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "address": {
+      "type": "text"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "mapUrl": {
+      "type": "string"
+    }
+  }
+}

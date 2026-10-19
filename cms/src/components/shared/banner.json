@@ -1,0 +1,45 @@
+{
+  "collectionName": "components_shared_banners",
+  "options": {},
+  "info": {
+    "displayName": "Banner",
+    "icon": "picture",
+    "description": "Hero / promotional banner"
+  },
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "required": true,
+      "maxLength": 90
+    },
+    "subheading": {
+      "type": "text",
+      "maxLength": 240
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "imageAlt": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "enumeration",
+      "enum": [
+        "light",
+        "dark",
+        "brand"
+      ],
+      "default": "brand"
+    },
+    "cta": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.cta",
+      "max": 2
+    }
+  }
+}

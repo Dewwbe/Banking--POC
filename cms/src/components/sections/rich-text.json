@@ -1,0 +1,14 @@
+{
+  "collectionName": "components_sections_rich_texts",
+  "options": {},
+  "info": {
+    "displayName": "Rich text",
+    "icon": "feather"
+  },
+  "attributes": {
+    "body": {
+      "type": "blocks",
+      "required": true
+    }
+  }
+}

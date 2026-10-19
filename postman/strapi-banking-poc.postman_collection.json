@@ -1,0 +1,2005 @@
+{
+  "info": {
+    "name": "Strapi Banking PoC",
+    "_postman_id": "8a1b2c3d-poc-strapi-banking",
+    "description": "Workstreams B, C, E, F \u2014 public API, permission and workflow tests. Run folders in order. Set testPassword/adminPassword to the SEED_* values from .env.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "cms",
+      "value": "http://localhost:1337"
+    },
+    {
+      "key": "testPassword",
+      "value": "CHANGE_ME"
+    },
+    {
+      "key": "adminPassword",
+      "value": "CHANGE_ME"
+    },
+    {
+      "key": "fullAccessToken",
+      "value": ""
+    },
+    {
+      "key": "readOnlyToken",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "draftProductId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0 Logins",
+      "item": [
+        {
+          "name": "Login Super Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/admin/login",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "admin",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@poc.local\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.collectionVariables.set('superToken', pm.response.json().data.token || pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Editor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/admin/login",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "admin",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"editor@poc.local\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.collectionVariables.set('editorToken', pm.response.json().data.token || pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Reviewer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/admin/login",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "admin",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"reviewer@poc.local\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.collectionVariables.set('reviewerToken', pm.response.json().data.token || pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Approver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/admin/login",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "admin",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"approver@poc.local\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.collectionVariables.set('approverToken', pm.response.json().data.token || pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Publisher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/admin/login",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "admin",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"publisher@poc.local\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.collectionVariables.set('publisherToken', pm.response.json().data.token || pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login News Editor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/admin/login",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "admin",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"news.editor@poc.local\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.collectionVariables.set('newsEditorToken', pm.response.json().data.token || pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find demo product ids",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product?locale=en&pageSize=50",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));",
+                  "const r = pm.response.json().results;",
+                  "pm.collectionVariables.set('productId', r.find(x => x.slug === 'fixed-deposit').documentId);",
+                  "pm.collectionVariables.set('draftProductId', r.find(x => x.slug === 'personal-loan').documentId);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A Public content API",
+      "item": [
+        {
+          "name": "Products (en)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/products?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('only published', () => pm.expect(pm.response.json().data.map(p => p.slug)).to.not.include('personal-loan'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Products (si)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/products?locale=si",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "si"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Products (ta)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/products?locale=ta",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "ta"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Home deep populate (en)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/home?locale=en&populate[hero][populate]=*&populate[sections][on][sections.card-group][populate][cards][populate]=*&populate[sections][on][sections.faq-group][populate]=*&populate[featuredProducts][fields][0]=name",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "home"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                },
+                {
+                  "key": "populate[hero][populate]",
+                  "value": "*"
+                },
+                {
+                  "key": "populate[sections][on][sections.card-group][populate][cards][populate]",
+                  "value": "*"
+                },
+                {
+                  "key": "populate[sections][on][sections.faq-group][populate]",
+                  "value": "*"
+                },
+                {
+                  "key": "populate[featuredProducts][fields][0]",
+                  "value": "name"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Active promotions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/promotions?locale=en&populate=*",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "promotions"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                },
+                {
+                  "key": "populate",
+                  "value": "*"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Locales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/i18n/locales",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "i18n",
+                "locales"
+              ],
+              "query": []
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Drafts via ?status=draft",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/products?status=draft&locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "draft"
+                },
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "With WORKFLOW_BLOCK_CONTENT_API_DRAFTS=false this shows NATIVE behaviour \u2014 record it."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [401, 403]', () => pm.expect([401, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Private fields not exposed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/products?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('no approvedHash', () => pm.expect(pm.response.json().data[0]).to.not.have.property('approvedHash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Public create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/api/products",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"name\": \"x\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [401, 403]', () => pm.expect([401, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Audit logs on content API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/audit-logs",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs"
+              ],
+              "query": []
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403, 404]', () => pm.expect([403, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG pageSize above maxLimit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/products?pagination[pageSize]=10000",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "pagination[pageSize]",
+                  "value": "10000"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('capped at 100', () => pm.expect(pm.response.json().meta.pagination.pageSize).to.be.at.most(100));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Users-permissions registration disabled",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/api/auth/local/register",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "local",
+                "register"
+              ],
+              "query": []
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"x\",\n  \"email\": \"x@x.com\",\n  \"password\": \"Passw0rd!\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [400, 403]', () => pm.expect([400, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "B Roles & permissions (admin API)",
+      "item": [
+        {
+          "name": "NEG Editor publishes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}/actions/publish?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}",
+                "actions",
+                "publish"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Editor unpublishes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}/actions/unpublish?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}",
+                "actions",
+                "unpublish"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Editor deletes",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Reviewer edits rate (silently ignored)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{reviewerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interestRate\": 99.99\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rate not changed', () => pm.expect(pm.response.json().data.interestRate).to.not.eql(99.99));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG News editor reads products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newsEditorToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Editor reads audit log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::audit-log.audit-log",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::audit-log.audit-log"
+              ],
+              "query": []
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Editor lists admin users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/admin/users",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ],
+              "query": []
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "C Approval workflow (run in order)",
+      "item": [
+        {
+          "name": "NEG Editor self-approves draft",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{draftProductId}}?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{draftProductId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflowStage\": \"approved\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [400, 403]', () => pm.expect([400, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1 Editor changes rate + submits",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interestRate\": 8.25,\n  \"workflowStage\": \"in_review\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Publisher publishes in-review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}/actions/publish?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}",
+                "actions",
+                "publish"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{publisherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [400, 403]', () => pm.expect([400, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2 Reviewer \u2192 awaiting approval",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{reviewerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflowStage\": \"awaiting_approval\",\n  \"reviewComment\": \"Checked\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Reviewer approves own review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{reviewerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflowStage\": \"approved\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [400, 403]', () => pm.expect([400, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3 Approver approves",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{approverToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflowStage\": \"approved\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4 Publisher publishes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}/actions/publish?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}",
+                "actions",
+                "publish"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{publisherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5 Editor changes rate after approval",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{editorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interestRate\": 8.75\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Publisher publishes changed rate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{productId}}/actions/publish?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{productId}}",
+                "actions",
+                "publish"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{publisherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [400, 403]', () => pm.expect([400, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6 Public still shows approved rate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/products?filters[slug][$eq]=fixed-deposit&locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "filters[slug][$eq]",
+                  "value": "fixed-deposit"
+                },
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('8.25 still live', () => pm.expect(pm.response.json().data[0].interestRate).to.eql(8.25));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Super Admin publishes unapproved",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::product.product/{{draftProductId}}/actions/publish?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::product.product",
+                "{{draftProductId}}",
+                "actions",
+                "publish"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "Allowed only with WORKFLOW_SUPERADMIN_OVERRIDE=true (logged).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{superToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [400, 403]', () => pm.expect([400, 403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "E API tokens",
+      "item": [
+        {
+          "name": "NEG Full-access token publishes (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/api/products?status=published",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "published"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{fullAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"name\": \"Bypass\",\n    \"slug\": \"bypass\",\n    \"category\": \"loan\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Full-access token default create (REST create publishes by default)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/api/products",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{fullAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"name\": \"Bypass2\",\n    \"slug\": \"bypass-2\",\n    \"category\": \"loan\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read-only token reads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{cms}}/api/products?locale=en",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "en"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{readOnlyToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [200]', () => pm.expect([200]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Read-only token writes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/api/products",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "api",
+                "products"
+              ],
+              "query": []
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{readOnlyToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"name\": \"x\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NEG Super Admin edits audit log",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{cms}}/content-manager/collection-types/api::audit-log.audit-log/REPLACE_WITH_ID",
+              "host": [
+                "{{cms}}"
+              ],
+              "path": [
+                "content-manager",
+                "collection-types",
+                "api::audit-log.audit-log",
+                "REPLACE_WITH_ID"
+              ],
+              "query": []
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{superToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actorEmail\": \"x\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is one of [403]', () => pm.expect([403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

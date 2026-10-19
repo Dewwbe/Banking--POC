@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_shared_faqs",
+  "options": {},
+  "info": {
+    "displayName": "FAQ",
+    "icon": "question",
+    "description": "Question and answer"
+  },
+  "attributes": {
+    "question": {
+      "type": "string",
+      "required": true
+    },
+    "answer": {
+      "type": "blocks",
+      "required": true
+    }
+  }
+}

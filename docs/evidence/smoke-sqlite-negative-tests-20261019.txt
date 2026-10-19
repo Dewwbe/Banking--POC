@@ -1,0 +1,38 @@
+# Smoke run during repository build: Strapi 5.58.0 on SQLite (not Docker/PostgreSQL), FULL_ACCESS_TOKEN set.
+== Strapi PoC negative tests — 20261019T070808Z — http://localhost:1337
+Demo product documentId=extzkbvytn11uxp2sljw8ynr
+
+-- Workstream B: role permissions (admin API)
+PASS  RBAC-01  Editor cannot publish  (HTTP 403)
+PASS  RBAC-02  Editor cannot unpublish  (HTTP 403)
+PASS  RBAC-03  Reviewer cannot change interest rate — field ignored (HTTP 200, rate still 9.5)
+PASS  RBAC-04  Editor cannot read audit log  (HTTP 403)
+PASS  RBAC-05  Editor cannot list admin users  (HTTP 403)
+PASS  RBAC-06  News-only editor cannot read products (content-type restriction)  (HTTP 403)
+
+-- Workstream C: approval workflow enforcement
+PASS  WF-01  Editor cannot self-approve a draft (draft → approved)  (HTTP 400)
+PASS  WF-02  Editor edits interest rate and submits for review  (HTTP 200)
+PASS  WF-03  Publisher cannot publish content that is only In Review  (HTTP 400)
+PASS  WF-04  Reviewer moves to Awaiting Approval  (HTTP 200)
+PASS  WF-05  Reviewer cannot also approve (separation of duties)  (HTTP 403)
+PASS  WF-06  Approver approves  (HTTP 200)
+PASS  WF-06b  Publisher publishes the approved rate  (HTTP 200)
+PASS  WF-06c  Public API now shows approved rate 8.25
+PASS  WF-07  Editor changes the rate AFTER approval (should reset approval)  (HTTP 200)
+PASS  WF-08  Approval invalidated after change (stage=draft)
+PASS  WF-09  Publisher cannot publish the changed (unapproved) rate  (HTTP 400)
+PASS  WF-10  Public API still shows the last APPROVED rate (8.25), not the unapproved 8.75
+
+-- Workstream E: public / token API exposure
+PASS  API-01  Public cannot create products  (HTTP 403)
+PASS  API-02  Public cannot read audit logs  (HTTP 404)
+PASS  API-03  Public ?status=draft does not expose drafts (HTTP 403)
+PASS  API-04  Private workflow fields hidden from the public API
+PASS  API-05  Full-access API token cannot publish directly (bypass)  (HTTP 403)
+
+-- Workstream E: admin login rate limiting
+PASS  SEC-03  Repeated failed logins are throttled  (HTTP 429)
+
+== Summary: 24 passed, 0 failed. Evidence: docs/evidence/negative-tests-20261019T070808Z.txt
+NOTE: re-approve and publish 'fixed-deposit' (or re-seed) before re-running.

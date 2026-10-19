@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_sections_cta_blocks",
+  "options": {},
+  "info": {
+    "displayName": "CTA block",
+    "icon": "cursor"
+  },
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "required": true
+    },
+    "text": {
+      "type": "text"
+    },
+    "cta": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.cta",
+      "required": true
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "collectionName": "components_sections_card_groups",
+  "options": {},
+  "info": {
+    "displayName": "Card group",
+    "icon": "layout",
+    "description": "Heading + grid of cards"
+  },
+  "attributes": {
+    "heading": {
+      "type": "string"
+    },
+    "cards": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.card",
+      "max": 6
+    }
+  }
+}

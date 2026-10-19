@@ -1,0 +1,35 @@
+{
+  "collectionName": "components_shared_seos",
+  "options": {},
+  "info": {
+    "displayName": "SEO",
+    "icon": "search",
+    "description": "Search and social metadata"
+  },
+  "attributes": {
+    "metaTitle": {
+      "type": "string",
+      "required": true,
+      "maxLength": 60
+    },
+    "metaDescription": {
+      "type": "text",
+      "required": true,
+      "maxLength": 160
+    },
+    "canonicalUrl": {
+      "type": "string"
+    },
+    "noIndex": {
+      "type": "boolean",
+      "default": false
+    },
+    "shareImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    }
+  }
+}

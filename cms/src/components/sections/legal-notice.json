@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_sections_legal_notices",
+  "options": {},
+  "info": {
+    "displayName": "Legal notice",
+    "icon": "shield",
+    "description": "Regulatory / legal notice with optional PDF"
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "body": {
+      "type": "blocks",
+      "required": true
+    },
+    "document": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "files"
+      ]
+    }
+  }
+}

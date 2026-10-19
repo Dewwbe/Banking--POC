@@ -1,0 +1,33 @@
+{
+  "collectionName": "components_shared_cards",
+  "options": {},
+  "info": {
+    "displayName": "Card",
+    "icon": "apps",
+    "description": "Reusable content card"
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "body": {
+      "type": "text"
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "imageAlt": {
+      "type": "string"
+    },
+    "link": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.cta"
+    }
+  }
+}

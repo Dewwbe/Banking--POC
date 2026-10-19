@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #0b4f6c;
+  --color-brand-dark: #073447;
+  --color-accent: #e0a100;
+  --font-sans: "Inter", "Noto Sans", "Noto Sans Sinhala", "Iskoola Pota", "Noto Sans Tamil", "Latha", system-ui, sans-serif;
+}
+
+body {
+  background: #f7f8fa;
+  color: #1c2530;
+}

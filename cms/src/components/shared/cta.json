@@ -1,0 +1,33 @@
+{
+  "collectionName": "components_shared_ctas",
+  "options": {},
+  "info": {
+    "displayName": "CTA",
+    "icon": "cursor",
+    "description": "Call-to-action link or button"
+  },
+  "attributes": {
+    "label": {
+      "type": "string",
+      "required": true,
+      "maxLength": 40
+    },
+    "url": {
+      "type": "string",
+      "required": true
+    },
+    "variant": {
+      "type": "enumeration",
+      "enum": [
+        "primary",
+        "secondary",
+        "link"
+      ],
+      "default": "primary"
+    },
+    "openInNewTab": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
