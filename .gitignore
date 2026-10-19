@@ -14,3 +14,4 @@ backups/*
 !backups/.gitkeep
 *.log
 .DS_Store
+cms/.strapi-updater.json
