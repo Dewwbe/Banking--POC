@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Banner, Sections } from '@/components/Sections';
+import { Banner, ProductCard, SectionHeading, Sections } from '@/components/Sections';
 import { getHome, isLocale } from '@/lib/strapi';
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
@@ -13,14 +13,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     <>
       <Banner banner={home.hero} />
       {home.featuredProducts?.length > 0 && (
-        <section className="grid gap-4 sm:grid-cols-2">
-          {home.featuredProducts.map((p: any) => (
-            <Link key={p.slug} href={`/${locale}/products/${p.slug}`} className="rounded-lg bg-white p-5 shadow-sm hover:shadow">
-              <h3 className="font-semibold">{p.name}</h3>
-              {p.interestRate != null && <p className="mt-1 text-2xl font-bold text-brand">{p.interestRate}% p.a.</p>}
-              <p className="mt-2 text-sm text-gray-600">{p.summary}</p>
-            </Link>
-          ))}
+        <section>
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <SectionHeading>Featured products</SectionHeading>
+            <Link href={`/${locale}/products`} className="mb-6 text-sm font-semibold text-brand hover:underline">View all →</Link>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {home.featuredProducts.map((p: any) => <ProductCard key={p.slug} p={p} locale={locale} />)}
+          </div>
         </section>
       )}
       <Sections sections={home.sections} />

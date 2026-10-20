@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Blocks } from '@/components/Blocks';
-import { Sections } from '@/components/Sections';
+import { SectionHeading, Sections } from '@/components/Sections';
 import { getAbout, isLocale, mediaUrl } from '@/lib/strapi';
 
 export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -11,19 +11,34 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
 
   return (
     <>
-      <article className="space-y-4 rounded-xl bg-white p-8">
-        <h1 className="text-3xl font-bold">{a.title}</h1>
-        <Blocks content={a.introduction} />
-        {a.mission && <p className="text-lg italic">{a.mission}</p>}
+      <header className="rounded-3xl bg-gradient-to-br from-[#4f2c85] via-brand to-lilac p-8 text-white sm:p-12">
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">{a.title}</h1>
+        {a.mission && <p className="mt-4 max-w-2xl text-xl font-medium">{a.mission}</p>}
+      </header>
+
+      {a.introduction?.length > 0 && (
+        <section className="rounded-3xl border border-line bg-white p-6 text-lg sm:p-10"><Blocks content={a.introduction} /></section>
+      )}
+
+      {a.values?.length > 0 && (
+        <section>
+          <SectionHeading>What we stand for</SectionHeading>
+          <div className="grid gap-5 sm:grid-cols-3">
+            {a.values.map((v: any, i: number) => (
+              <div key={i} className="rounded-2xl bg-lilac-soft p-6">
+                <h3 className="font-bold text-brand-dark">{v.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink">{v.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {a.images?.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-3">
-          {(a.values ?? []).map((v: any, i: number) => (
-            <div key={i} className="rounded bg-gray-50 p-4"><h3 className="font-semibold">{v.title}</h3><p className="text-sm">{v.body}</p></div>
-          ))}
+          {a.images.map((m: any, i: number) => <img key={i} src={mediaUrl(m)!} alt={m.alternativeText ?? ''} className="h-56 w-full rounded-2xl object-cover" />)}
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {(a.images ?? []).map((m: any, i: number) => <img key={i} src={mediaUrl(m)!} alt={m.alternativeText ?? ''} className="rounded" />)}
-        </div>
-      </article>
+      )}
       <Sections sections={a.sections} />
     </>
   );

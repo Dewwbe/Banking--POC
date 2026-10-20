@@ -1,13 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #0b4f6c;
-  --color-brand-dark: #073447;
-  --color-accent: #e0a100;
+  /* White + light purple banking palette */
+  --color-brand: #6b3fa0;        /* primary purple: buttons, links, rates (7:1 on white) */
+  --color-brand-dark: #3f2468;   /* footer, headings on tint */
+  --color-lilac: #a583cc;        /* gradients, accents */
+  --color-lilac-soft: #ede4f7;   /* chips, tinted panels */
+  --color-mist: #f8f5fc;         /* page background */
+  --color-ink: #2a1f3d;          /* body text */
+  --color-muted: #6a6179;        /* secondary text */
+  --color-line: #e6dcf2;         /* borders */
   --font-sans: "Inter", "Noto Sans", "Noto Sans Sinhala", "Iskoola Pota", "Noto Sans Tamil", "Latha", system-ui, sans-serif;
 }
 
 body {
-  background: #f7f8fa;
-  color: #1c2530;
+  background: var(--color-mist);
+  color: var(--color-ink);
 }
+
+a:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--color-lilac);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details[open] .faq-chevron { transform: rotate(180deg); }
