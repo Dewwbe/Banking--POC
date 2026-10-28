@@ -3,6 +3,8 @@
 #
 #   docker compose up -d --build                     # db + cms + web (development mode)
 #   docker compose --profile proxy up -d             # + nginx reverse proxy (admin allow-list, rate limits)
+#   docker compose --profile sso up -d               # + nginx with an Entra ID SSO/MFA gate in front of /admin
+#                                                     #   (alternative to `proxy` — same ports, don't run both; see docs/08-sso-mfa-setup.md)
 #   docker compose --profile minio up -d             # + MinIO (S3-compatible media storage test)
 #   docker compose --profile loadtest run --rm k6    # basic load test against the public API
 
@@ -73,6 +75,47 @@ services:
       - "8081:8081"   # CMS (API + /admin, admin restricted by IP)
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks: [frontend]
+
+  # ---- Optional: infrastructure-level SSO/MFA gate in front of /admin (Workstream E) ----
+  # Strapi Community has no SSO/MFA. This pair authenticates every request to /admin and the admin API
+  # against Microsoft Entra ID BEFORE anything reaches Strapi — Strapi itself is unmodified. MFA is
+  # enforced by an Entra ID Conditional Access policy on the app registration, not by any code here.
+  # Alternative to the `proxy` profile (same ports 8080/8081) — run one or the other, not both.
+  # Setup walkthrough: docs/08-sso-mfa-setup.md
+  proxy-sso:
+    image: nginx:1.29.1-alpine
+    profiles: ["sso"]
+    depends_on: [cms, web, oauth2-proxy]
+    ports:
+      - "8080:8080"   # public website
+      - "8081:8081"   # CMS (API + /admin, gated by Entra ID SSO/MFA + the existing IP allow-list)
+    volumes:
+      - ./infra/nginx/nginx-sso.conf:/etc/nginx/nginx.conf:ro
+    networks: [frontend]
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    profiles: ["sso"]
+    restart: unless-stopped
+    depends_on: [cms]
+    environment:
+      OAUTH2_PROXY_PROVIDER: oidc
+      OAUTH2_PROXY_OIDC_ISSUER_URL: https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0
+      OAUTH2_PROXY_CLIENT_ID: ${AZURE_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET}
+      OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_REDIRECT_URL}
+      OAUTH2_PROXY_EMAIL_DOMAINS: ${OAUTH2_PROXY_EMAIL_DOMAINS:-*}
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      # Pure auth-check sidecar — nginx proxies the real traffic to cms itself (auth_request pattern).
+      OAUTH2_PROXY_UPSTREAMS: static://202
+      OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
+      OAUTH2_PROXY_PASS_ACCESS_TOKEN: "false"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      # HTTP only, for the local/demo stack behind nginx on :8081. Set to "true" once this sits behind real TLS.
+      OAUTH2_PROXY_COOKIE_SECURE: "false"
     networks: [frontend]
 
   # ---- Optional: S3-compatible media storage test ----

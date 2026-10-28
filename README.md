@@ -111,6 +111,14 @@ These were run while building the repository; repeat them on the Docker/PostgreS
 * Takedown: unpublish via admin API → webhook → Next.js revalidation → product page returned 404 after **≈0.1 s** locally (no CDN).
 * Findings already visible: REST `create` publishes immediately by default; field-level RBAC silently drops forbidden fields (HTTP 200) instead of rejecting; creating any admin user closes the first-run Super Admin registration; current Strapi uses the auth strategy names `content-api-token` / `admin-token` (admin tokens act on behalf of a user).
 
+## SSO / MFA demo (Entra ID gate in front of `/admin`)
+
+Community has no native SSO/MFA. `docker compose --profile sso up -d --build` runs an alternative reverse
+proxy (`proxy-sso`, same ports as `proxy`) with an `oauth2-proxy` sidecar that requires a valid Microsoft
+Entra ID login — MFA enforced by Entra Conditional Access — before `/admin` is reachable at all. Setup
+(Entra app registration) and the demo script: [`docs/08-sso-mfa-setup.md`](docs/08-sso-mfa-setup.md).
+Don't run this together with `--profile proxy` — both publish 8080/8081.
+
 ## Running without Docker (development)
 
 ```bash

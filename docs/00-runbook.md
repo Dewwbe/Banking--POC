@@ -39,7 +39,7 @@ Each day ends with a named deliverable and evidence saved under `docs/evidence/`
 1. Workflow: run WF-* in the UI (edit view) **and** via `negative-tests.sh` / Postman folder C. Include bulk publish from the list view (WF-12) and Super Admin attempts (WF-13).
 2. Observation mode: set `WORKFLOW_ENFORCEMENT=false` and `WORKFLOW_BLOCK_CONTENT_API_DRAFTS=false`, restart cms, repeat WF-03/WF-09/API-03 to record **native Community behaviour**. Restore afterwards.
 3. Audit: run AUD-* — reconstruct one change end-to-end from the audit table only (who changed the rate, from what to what, who approved, when it went live). Run the tamper test (AUD-08).
-4. Security: run SEC-* (proxy profile for network restriction and rate limiting). For SSO/MFA, document what Community offers (nothing native) and what Growth+SSO add-on / Enterprise offer; if possible obtain a Growth trial licence and test Entra ID SSO.
+4. Security: run SEC-* (proxy profile for network restriction and rate limiting). For SSO/MFA, document what Community offers natively (nothing) and what Growth+SSO add-on / Enterprise offer. Separately — this does **not** require a Strapi licence — run the `sso` profile per `docs/08-sso-mfa-setup.md` (SEC-04b/SEC-05b) to test the infra-level Entra ID SSO/MFA gate in front of `/admin`, and record its residual gap vs. true Enterprise single-login SSO.
 5. Fill `05-security-checklist.md`.
 
 **Deliverable:** workflow prototype results, audit reconstruction example, security findings.

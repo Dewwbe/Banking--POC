@@ -7,8 +7,8 @@ Complete during Day 3. "Config" = where in this repository the control lives.
 | Admin auth | Strong admin passwords | Strapi built-in rules | SEC-01 | | Record actual policy; cannot be customised without code |
 | Admin auth | Session lifetime | `cms/config/admin.ts` `auth.sessions` | SEC-02 | | |
 | Admin auth | Failed-login throttling | `cms/config/admin.ts` `rateLimit` + nginx `admin_login` zone | SEC-03 | Smoke ✔ | Failed logins not in audit trail — capture proxy logs |
-| Admin auth | MFA | — | SEC-04 | | Not native; requires SSO + IdP (Entra Conditional Access) |
-| Admin auth | SSO (Entra ID) | — | SEC-05 | | Growth + add-on / Enterprise |
+| Admin auth | MFA | Not native (SEC-04). Infra: `oauth2-proxy` + Entra Conditional Access (`docs/08-sso-mfa-setup.md`) | SEC-04 / SEC-04b | | Native = no code path, any tier. Infra gate enforces MFA before Strapi is reached; does not add MFA to Strapi's own login form |
+| Admin auth | SSO (Entra ID) | Not native (SEC-05); Growth add-on / Enterprise for true single-login SSO. Infra: `infra/nginx/nginx-sso.conf` + `oauth2-proxy` (`docs/08-sso-mfa-setup.md`) | SEC-05 / SEC-05b | | Infra gate blocks unauthenticated `/admin` access; Strapi's own login still runs after it (two logins) — not equivalent to Enterprise auto-provisioned SSO |
 | Admin auth | First-run Super Admin registration | network restriction from first deploy; seed Super Admin from secrets | SEC-20 | | Anyone reaching /admin on an empty install can register |
 | Network | `/admin` and admin API only from bank networks | `infra/nginx/nginx.conf` `geo $admin_allowed` | SEC-10/11 | | Admin API paths: `/admin`, `/content-manager`, `/upload`, `/i18n`, … |
 | Network | DB not exposed | `docker-compose.yml` (no ports on db) | SEC-18 | | |

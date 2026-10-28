@@ -90,8 +90,10 @@
 | SEC-01 | Password policy | Try weak passwords for a new admin | Record Strapi's built-in rules (min length/complexity) | N | | |
 | SEC-02 | Session expiry | Lower ADMIN_SESSION_* values, wait | Forced re-login | N | | |
 | SEC-03 | Login throttling | 8 failed logins | 429 | N | Smoke ✔ | |
-| SEC-04 | MFA | Look for MFA in admin | Not available natively (any tier) → via SSO IdP | L | | |
-| SEC-05 | Entra ID SSO | Community: not available. Growth + SSO add-on / Enterprise: test if trial licence obtained | Document | L | | |
+| SEC-04 | MFA (native) | Look for MFA in admin | Not available natively (any tier) — confirmed, no code path exists | L | Smoke ✔ (absent) | |
+| SEC-05 | Entra ID SSO (native) | Community: not available. Growth + SSO add-on / Enterprise: would need a trial licence to test | Document only | L | | |
+| SEC-04b | MFA via infra gate | `docs/08-sso-mfa-setup.md` SSO-01..03, Conditional Access policy requires MFA | Second factor enforced before `/admin` is reachable | C | | |
+| SEC-05b | Entra ID SSO via infra gate | `docs/08-sso-mfa-setup.md` SSO-01..07 | `/admin` and admin API unreachable without a valid Entra session; Strapi's own login still required afterwards (two logins, not one — see doc) | C | | |
 | SEC-06 | API token types | Create read-only, full-access, custom tokens; test scope | Read-only cannot write | N | | |
 | SEC-07 | Token lifespan & rotation | Create 7-day token; regenerate; old token rejected | Works | N | | |
 | SEC-08 | API-token publish bypass | Full-access token `POST /api/products` | Native: publishes; with prototype: 403 | N/C | Smoke ✔ (403) | |

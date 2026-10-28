@@ -31,8 +31,8 @@ Legend: ✅ yes · ⚠️ partial / with caveats · ❌ no
 | 18 | Admin authentication, password login | ✅ | — | No | — | | |
 | 19 | Login throttling | ✅ | — | No | — | Smoke ✔ | |
 | 20 | Session expiry | ✅ (config) | — | No | — | | |
-| 21 | MFA | ❌ | ⚠️ via reverse-proxy auth / IdP in front of `/admin` | Via SSO (Growth add-on / Enterprise) + IdP MFA | **High** | | Native Strapi MFA not offered in any tier — confirm with Strapi |
-| 22 | SSO / Microsoft Entra ID | ❌ | ⚠️ proxy-level SSO (does not map identities/roles into Strapi) | Growth + SSO add-on, or Enterprise | **High** — joiner/mover/leaver | | |
+| 21 | MFA | ❌ | ✅ implemented — Entra Conditional Access via `oauth2-proxy` gate (`docs/08-sso-mfa-setup.md`) | Via SSO (Growth add-on / Enterprise) + IdP MFA — no licence needed for the infra-gate route | **High** | Pending (run SEC-04b) | Native Strapi MFA not offered in any tier — confirm with Strapi. Gate enforces MFA at the network edge before Strapi is reached |
+| 22 | SSO / Microsoft Entra ID | ❌ | ✅ implemented — `infra/nginx/nginx-sso.conf` + `oauth2-proxy` (`docs/08-sso-mfa-setup.md`), does not map identities/roles into Strapi | Growth + SSO add-on, or Enterprise, for true single-login SSO with auto-provisioning | **High** — joiner/mover/leaver | Pending (run SEC-05b) | Gate = access control, not identity federation: blocks unauthenticated `/admin` access, but Strapi login still runs separately after it (two logins) |
 | 23 | API tokens (read-only / full / custom, lifespan, regenerate) | ✅ | — | No | Medium | | Full-access tokens can publish natively (REST create publishes by default) |
 | 24 | REST / GraphQL permissions, public vs authenticated | ✅ | — | No | Medium | Smoke ✔ (REST) | Draft read via `?status=draft` — record native result |
 | 25 | CORS / security headers | ✅ (config) | — | No | Low | | |
