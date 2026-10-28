@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@strapi/utils": "^5.58.0"
+  }
+}
