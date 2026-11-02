@@ -1,0 +1,10 @@
+# Override for the `sso` profile: stop publishing the CMS port on the host so /admin can ONLY be reached
+# through the Entra-gated nginx on :8081. Without this, http://localhost:1337/admin bypasses the gate.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.sso.yml --profile sso up -d --build --force-recreate
+#
+# Requires Docker Compose >= 2.24 (`!reset`). Host-side scripts that target :1337 (negative-tests.sh, seeding
+# checks) must use :8081 for the API instead while this override is active.
+services:
+  cms:
+    ports: !reset []

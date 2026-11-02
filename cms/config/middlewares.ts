@@ -42,6 +42,10 @@ export default ({ env }) => {
         formidable: { maxFileSize: maxBytes },
       },
     },
+    // Entra ID -> Strapi account binding (no-op unless SSO_BINDING_ENFORCED=true). Needs the parsed body, so after strapi::body.
+    'global::sso-binding',
+    // "Sign in with Microsoft" (GET /sso/entra) — no-op unless SSO_LOGIN_ENABLED=true.
+    'global::sso-login',
     'strapi::session',
     'strapi::favicon',
     'strapi::public',

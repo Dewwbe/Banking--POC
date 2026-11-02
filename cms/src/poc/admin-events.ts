@@ -30,19 +30,35 @@ export function registerAdminEvents(strapi: Core.Strapi) {
     const payload = args[0] ?? {};
     const subject = payload.user ?? payload.role ?? payload.media ?? payload.apiToken ?? payload.webhook ?? payload;
     const actor = getActor(strapi);
+    // Entra ID identity set by nginx/oauth2-proxy (sso profile). Only trustworthy because the CMS port is not
+    // published in that mode (docker-compose.sso.yml) - otherwise a direct caller could spoof these headers.
+    const reqHeaders: any = (strapi.requestContext.get() as any)?.request?.headers ?? {};
+    const sso = reqHeaders['x-forwarded-email'] || reqHeaders['x-forwarded-user']
+      ? { entraUser: reqHeaders['x-forwarded-user'] ?? null, entraEmail: reqHeaders['x-forwarded-email'] ?? null }
+      : { entraUser: null, entraEmail: null };
     // admin.auth.success happens before ctx.state.user is set: attribute it to the logged-in user.
     if (name === 'admin.auth.success' && payload.user) {
       actor.channel = 'admin';
       actor.id = `admin:${payload.user.id}`;
       actor.email = payload.user.email;
     }
+    // Failed sign-in: Strapi emits no authenticated user, so attribute it to the email that was tried, mark it denied
+    // and keep the reason. The login method (password / Microsoft) is recorded on every auth event.
+    const failed = name === 'admin.auth.error';
+    const attempted = (strapi.requestContext.get() as any)?.request?.body?.email;
+    if (failed) {
+      actor.id = 'anonymous';
+      actor.email = payload.user?.email ?? (typeof attempted === 'string' ? attempted.toLowerCase() : 'unknown');
+    }
+    const auth = name.startsWith('admin.auth') ? { loginMethod: payload.provider === 'entra' ? 'microsoft' : 'password' } : {};
     void writeAudit(strapi, {
       action: `event:${name}`,
-      outcome: 'allowed',
+      outcome: failed ? 'denied' : 'allowed',
+      reason: failed ? String(payload.reason ?? payload.error?.message ?? 'login failed') : null,
       actor,
       contentType: null,
       documentId: subject?.documentId ?? (subject?.id != null ? String(subject.id) : null),
-      after: pick(subject),
+      after: { ...pick(subject), ...auth, ...sso },
     });
   });
 }

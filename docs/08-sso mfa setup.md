@@ -39,10 +39,16 @@ OAUTH2_PROXY_REDIRECT_URL=http://localhost:8081/oauth2/callback
 OAUTH2_PROXY_EMAIL_DOMAINS=*          # or your tenant's domain, e.g. bank.lk
 ```
 
+Also set `PUBLIC_URL=http://localhost:8081` and `IS_PROXIED=true` — the admin UI calls its API at `PUBLIC_URL`,
+so leaving it on `:1337` sends admin traffic around the gate.
+
 ## 3. Run it
 
+Use the override file so the CMS port (1337) is not published on the host. **Without it, `http://localhost:1337/admin`
+shows Strapi's login with no Entra step at all.** Always browse `http://localhost:8081/admin`.
+
 ```bash
-docker compose --profile sso up -d --build
+docker compose -f docker-compose.yml -f docker-compose.sso.yml --profile sso up -d --build --force-recreate
 docker compose logs -f proxy-sso oauth2-proxy
 ```
 
@@ -76,3 +82,100 @@ Record results in `docs/02-test-cases.md` (rows added below) and screenshot SSO-
 - Two logins, not one — document the UX cost; for a small admin team this is usually acceptable, for a large one it's friction worth costing against a Growth/Enterprise licence (see R-16).
 - `admin.auth.success` / `admin.auth.error` events captured by `cms/src/poc/admin-events.ts` reflect the **Strapi** login only — a failed Microsoft/MFA attempt is visible in the Entra ID sign-in logs, not in this repo's audit trail. If the bank needs one unified login audit trail, that's additional integration work (forward Entra sign-in logs to the same SIEM destination as the custom audit log), not something this PoC's audit code does today.
 - The Conditional Access policy is doing the actual enforcement; a tenant-wide MFA policy change made outside this repo changes this PoC's behaviour with zero code change — call that out in the report as expected, not a bug.
+
+## 6. Entra identity -> Strapi account binding
+
+Closes the main gap of the gate-only pattern: without it, anyone who clears Entra/MFA can type *any* Strapi admin's
+password, and the audit log would blame that Strapi user. `cms/src/middlewares/sso-binding.ts` (enabled with
+`SSO_BINDING_ENFORCED=true`) refuses:
+
+- `POST /admin/login` unless the Entra email (header `X-Forwarded-Email`, set by nginx from oauth2-proxy) may use the
+  Strapi email in the request body;
+- **every later admin API call** unless the Bearer token's user may be used by the Entra email on *that* request,
+  so a stolen admin token is useless from another Entra session.
+
+A Strapi email is allowed if it equals the Entra email (case-insensitive) or is listed in `SSO_IDENTITY_MAP`
+(`entra@x=strapi1@y|strapi2@y;entra2@x=strapi3@y`). It fails closed: no Entra header means refused. Every refusal is
+written to the audit log as `sso:identity-binding` (outcome `denied`) with the Entra and Strapi emails.
+
+**Production:** give each person one Strapi account whose email equals their Entra email and leave the map empty.
+The demo map in `.env` lets one tester use all role accounts, which defeats separation of duties between *people*,
+so do not carry it into UAT/prod.
+
+**Trust boundary:** the headers are ordinary HTTP headers. This is only sound while the CMS port is not reachable except
+through nginx (`docker-compose.sso.yml`). The flag defaults to `false`, so the plain `--profile proxy` stack is unchanged.
+
+| Step | Action | Expected |
+|---|---|---|
+| SSO-08 | Sign in via Entra, then log in to Strapi as an account mapped to you | Normal access |
+| SSO-09 | Same session, log in as an unmapped account | `403 Your Microsoft identity is not authorised for this CMS account` + `sso:identity-binding` denied row in the audit log |
+| SSO-10 | Reuse a valid admin token from a different Entra session | `403`, audit row |
+
+## 7. Combined login: email/password **or** "Sign in with Microsoft"
+
+`infra/nginx/nginx-sso.conf` now serves **both** sign-in methods on the Strapi login page (`/admin`). The previous
+"whole `/admin` behind Entra, then Strapi's form" layout is kept as `infra/nginx/nginx-sso-gate-only.conf`; mount that
+file in `docker-compose.yml` (`proxy-sso`) to go back to it.
+
+| Path | What happens |
+|---|---|
+| Email + password | Unchanged Strapi login. nginx only applies the IP allow-list and the login rate limit. **No Entra/MFA on this path.** |
+| Sign in with Microsoft | The button links to `/sso/entra`. nginx runs the oauth2-proxy `auth_request`, so the browser is sent to Entra (Conditional Access / MFA applies) and back. Strapi (`cms/src/middlewares/sso-login.ts`, flag `SSO_LOGIN_ENABLED=true`) then opens a normal admin session for the **active** Strapi user whose email equals the Entra email, and redirects to `/admin`. |
+
+Rules: nobody is created automatically; an Entra user with no matching Strapi account, an unfinished invitation, or a
+blocked account is returned to the login page with an explanation. Success and refusal are audited as `sso:login`.
+`SSO_IDENTITY_MAP` (section 6) may map one Entra email to **one** Strapi account. Because the password path now exists, leave
+`SSO_BINDING_ENFORCED=false` (that middleware requires an Entra header on every admin login).
+
+**Trust boundary (important):** Strapi trusts `X-Forwarded-Email` on `/sso/entra`. nginx overwrites it from the verified
+session on that route and blanks it everywhere else, but the CMS must still not be reachable except through nginx
+(`docker-compose.sso.yml` unpublishes :1337). With :1337 exposed, anyone could send that header and log in as any admin.
+
+**Security trade-off:** because the password path no longer goes through Entra, a leaked password is enough to sign
+in. To enforce MFA for everyone, use `nginx-sso-gate-only.conf`, or remove password logins for admins.
+
+### Adding users and assigning roles
+
+Super Admin only: **Settings → Administration Panel → Users → Invite new user**. Enter name, email and role (Bank Editor,
+Bank Reviewer, Bank Approver, Bank Publisher, ...). Strapi shows an invitation link (it is emailed only if an email
+provider is configured); the user opens it and sets a password. After that they can use either sign-in method. The
+Microsoft email must match the invited email. To change a role later: Users → edit → Roles.
+
+### Role dashboards
+
+After login every user lands on the admin homepage, which now has a **My work queue** widget (`cms/src/admin/widgets/WorkQueue.tsx`)
+that lists the Product, News article and Promotion items waiting for the user's role, each linking to the item:
+
+| Role | Queue |
+|---|---|
+| Bank Editor / News Editor | Changes requested, Drafts |
+| Bank Reviewer | Waiting for review |
+| Bank Approver | Waiting for approval |
+| Bank Publisher | Approved, ready to publish (not yet live) |
+| Super Admin | All five stages |
+
+Single types (Home, About Us, Contact Us) are not listed in the queue. Content is read through the Content Manager API,
+so each user only sees what their own permissions allow.
+
+| Step | Action | Expected |
+|---|---|---|
+| SSO-11 | Open `http://localhost:8081/admin` signed out | Strapi login form **with** a "Sign in with Microsoft" button |
+| SSO-12 | Click it, finish Entra sign-in as an Entra user that has an invited, active Strapi account | Lands on the homepage as that user, with the queue for their role |
+| SSO-13 | Same, with an Entra user that has no Strapi account | Back on the login page: "Your Microsoft account is not registered..." + `sso:login` denied row |
+| SSO-14 | Log in with email + password | Works as before |
+| SSO-15 | `curl -H "X-Forwarded-Email: admin@poc.local" http://localhost:8081/sso/entra` | Redirects to Entra sign-in, **not** logged in (nginx ignores the forged header) |
+
+### Audit trail coverage
+
+Everything below lands in the append-only, hash-chained audit log (`cms/src/poc/audit.ts`; Super Admin reads it under
+Content Manager -> Audit Log, and the latest 12 entries appear in the **Recent audit activity** homepage widget):
+
+| What | Audit action | Notes |
+|---|---|---|
+| Sign-in (password or Microsoft), sign-out | `event:admin.auth.success`, `event:admin.logout` | `after.loginMethod` is `password` or `microsoft`; Microsoft sign-ins also write `sso:login` with the role names |
+| Failed sign-in | `event:admin.auth.error` (outcome **denied**) | Actor = the email that was tried; `reason` says why. Entra sign-ins that are refused write `sso:login` denied |
+| Create / edit / delete / publish / unpublish / discard draft of Product, Promotion, News, Home, About, Contact | `create`, `update`, `delete`, `publish`, ... | Actor, roles, stage before/after, changed fields, before/after content, content hash; refused attempts are logged as denied |
+| Approval steps | `update+stage:in_review->awaiting_approval`, ... | |
+| Users, roles, permissions, API tokens, webhooks, media | `event:user.create`, `event:role.update`, ... | Which of these Community emits is a PoC finding |
+
+Changes made by raw SQL or `strapi import/transfer` bypass Strapi and are NOT audited (see `docs/05-security-checklist.md`).
