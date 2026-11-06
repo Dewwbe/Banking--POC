@@ -26,7 +26,7 @@ export function registerRollback(strapi: any) {
       handler: async (ctx: any) => {
         const actor = getActor(strapi);
         if (actor.channel !== 'admin' || !(isPublisher(actor) || actor.isSuperAdmin)) {
-          throw new errors.ForbiddenError('Rollback requires "Bank Publisher" or Super Admin');
+          throw new errors.ForbiddenError('Rollback requires "Publisher" or Super Admin');
         }
 
         const { uid, documentId, locale, sequence } = ctx.request.body ?? {};

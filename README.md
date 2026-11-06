@@ -24,7 +24,7 @@ The repository is the base for the five-day PoC described in [`docs/00-runbook.m
 ```bash
 cp .env.example .env
 ./scripts/generate-secrets.sh          # paste the output over the CHANGE_ME values in .env
-#   also set SEED_SUPERADMIN_PASSWORD and SEED_TEST_USER_PASSWORD
+#   also set SEED_SUPERADMIN_PASSWORD
 docker compose up -d --build
 docker compose logs -f cms             # wait for "[poc] Governance prototype active"
 ```
@@ -35,16 +35,17 @@ docker compose logs -f cms             # wait for "[poc] Governance prototype ac
 | http://localhost:3000/en | Public website (`/si`, `/ta` for Sinhala and Tamil) |
 | http://localhost:1337/api/products?locale=en | Public REST API |
 
-Seeded admin users (password = `SEED_TEST_USER_PASSWORD`):
+**Users are not seeded and no role has a shared or hard-coded password.** Only one bootstrap Super Admin is created from `SEED_SUPERADMIN_EMAIL` / `SEED_SUPERADMIN_PASSWORD`. Use it once to invite a **System Administrator** (Settings → Administration Panel → Users → *Invite new user*), then keep its credentials offline. The System Administrator invites everyone else; each invitee opens the one-time registration link and chooses their own password. For the link to be valid set `ADMIN_URL`/`url` to the public admin address; without an email provider the invite dialog shows the link to copy.
 
-| User | Role | Purpose |
-|---|---|---|
-| `admin@poc.local` (password `SEED_SUPERADMIN_PASSWORD`) | Super Admin | Configuration |
-| `editor@poc.local` | Bank Editor | Create/edit drafts, submit for review |
-| `news.editor@poc.local` | Bank News Editor | Same, News Articles only (content-type restriction) |
-| `reviewer@poc.local` | Bank Reviewer | Stage + comment only (field-level restriction) |
-| `approver@poc.local` | Bank Approver | Compliance approval |
-| `publisher@poc.local` | Bank Publisher | Publish/unpublish approved content |
+| Role | Purpose |
+|---|---|
+| Author | Create/edit drafts (products, news, home, about), submit for review |
+| Editor | Editorial review: pass to compliance or request changes |
+| Compliance Reviewer | Compliance approval (must differ from submitter and editor) |
+| Publisher | Publish/unpublish approved content |
+| Promotions Administrator | Owns promotions: create/edit and submit for review |
+| Branch Administrator | Owns branch/contact info (Contact Us): edit and submit for review |
+| System Administrator | Invites/deactivates users and assigns roles; no content access |
 
 Then run the automated checks:
 

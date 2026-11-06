@@ -100,7 +100,10 @@ export function getActor(strapi: Core.Strapi): Actor {
 }
 
 export const hasRole = (actor: Actor, ...names: string[]) => names.some((n) => actor.roles.includes(n));
-export const isEditor = (a: Actor) => hasRole(a, ROLES.editor, ROLES.newsEditor);
-export const isReviewer = (a: Actor) => hasRole(a, ROLES.reviewer);
-export const isApprover = (a: Actor) => hasRole(a, ROLES.approver);
+/** Roles that create content and submit it for review (Promotions/Branch Administrators are scoped authors). */
+export const isAuthor = (a: Actor) => hasRole(a, ROLES.author, ROLES.promotionsAdmin, ROLES.branchAdmin);
+/** Editorial review stage: in_review → awaiting_approval / changes_requested. */
+export const isEditor = (a: Actor) => hasRole(a, ROLES.editor);
+/** Compliance approval stage: awaiting_approval → approved / changes_requested. */
+export const isComplianceReviewer = (a: Actor) => hasRole(a, ROLES.complianceReviewer);
 export const isPublisher = (a: Actor) => hasRole(a, ROLES.publisher);

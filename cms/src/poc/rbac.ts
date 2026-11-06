@@ -1,5 +1,5 @@
 import type { Core } from '@strapi/strapi';
-import { LOCALES, ROLES, SYSTEM_WORKFLOW_FIELDS, WORKFLOW_UIDS } from './constants';
+import { AUDIT_UID, LOCALES, ROLES, SUPER_ADMIN_CODE, SYSTEM_WORKFLOW_FIELDS, WORKFLOW_UIDS } from './constants';
 
 /**
  * Workstream B — creates the PoC admin roles with field-, locale- and content-type-level permissions using
@@ -48,40 +48,61 @@ const notSystemField = (f: string) => !SYSTEM_WORKFLOW_FIELDS.includes(f);
 const onlyWorkflowDecision = (f: string) => f === 'workflowStage' || f === 'reviewComment';
 const onlyStage = (f: string) => f === 'workflowStage';
 
+const perm = (action: string): Perm => ({ action, subject: null, properties: {}, conditions: [] });
+const PROMOTION = ['api::promotion.promotion'] as const;
+const CONTACT = ['api::contact-us.contact-us'] as const;
+const AUTHOR_TYPES = WORKFLOW_UIDS.filter((u) => u !== PROMOTION[0] && u !== CONTACT[0]);
+
 export async function ensureRoles(strapi: Core.Strapi): Promise<Record<string, number>> {
   const roleService: any = strapi.service('admin::role');
   const ids: Record<string, number> = {};
 
   const definitions: Array<{ name: string; description: string; permissions: () => Perm[] }> = [
     {
+      name: ROLES.author,
+      description: 'Create and edit drafts of products, news and page content; submit for review. Cannot publish, delete or edit approval metadata.',
+      permissions: () => [...cmPerms(strapi, AUTHOR_TYPES, ['create', 'read', 'update'], notSystemField), ...UPLOAD_EDIT.map(perm)],
+    },
+    {
       name: ROLES.editor,
-      description: 'PoC: create and edit drafts, submit for review. Cannot publish, delete or edit approval metadata.',
-      permissions: () => [...cmPerms(strapi, WORKFLOW_UIDS, ['create', 'read', 'update'], notSystemField),
-        ...UPLOAD_EDIT.map((action) => ({ action, subject: null, properties: {}, conditions: [] }))],
+      description: 'Editorial review: read everything; change only workflow stage + review comment (pass to compliance or request changes).',
+      permissions: () => [...cmPerms(strapi, WORKFLOW_UIDS, ['read', 'update'], onlyWorkflowDecision), ...UPLOAD_READ.map(perm)],
     },
     {
-      name: ROLES.newsEditor,
-      description: 'PoC: like Bank Editor but restricted to News Articles only (content-type restriction test).',
-      permissions: () => [...cmPerms(strapi, ['api::news-article.news-article'], ['create', 'read', 'update'], notSystemField),
-        ...UPLOAD_EDIT.map((action) => ({ action, subject: null, properties: {}, conditions: [] }))],
-    },
-    {
-      name: ROLES.reviewer,
-      description: 'PoC: read everything, change only workflow stage + review comment (field-level permission test).',
-      permissions: () => [...cmPerms(strapi, WORKFLOW_UIDS, ['read', 'update'], onlyWorkflowDecision),
-        ...UPLOAD_READ.map((action) => ({ action, subject: null, properties: {}, conditions: [] }))],
-    },
-    {
-      name: ROLES.approver,
-      description: 'PoC: compliance approval — read everything, change only workflow stage + comment.',
-      permissions: () => [...cmPerms(strapi, WORKFLOW_UIDS, ['read', 'update'], onlyWorkflowDecision),
-        ...UPLOAD_READ.map((action) => ({ action, subject: null, properties: {}, conditions: [] }))],
+      name: ROLES.complianceReviewer,
+      description: 'Compliance approval: read everything; change only workflow stage + review comment (approve or request changes).',
+      permissions: () => [...cmPerms(strapi, WORKFLOW_UIDS, ['read', 'update'], onlyWorkflowDecision), ...UPLOAD_READ.map(perm)],
     },
     {
       name: ROLES.publisher,
-      description: 'PoC: publish / unpublish approved content. Update limited to workflow stage (required by the Publish button flow).',
-      permissions: () => [...cmPerms(strapi, WORKFLOW_UIDS, ['read', 'update', 'publish'], onlyStage),
-        ...UPLOAD_READ.map((action) => ({ action, subject: null, properties: {}, conditions: [] }))],
+      description: 'Publish / unpublish approved content. Update limited to workflow stage (required by the Publish button flow).',
+      permissions: () => [...cmPerms(strapi, WORKFLOW_UIDS, ['read', 'update', 'publish'], onlyStage), ...UPLOAD_READ.map(perm)],
+    },
+    {
+      name: ROLES.promotionsAdmin,
+      description: 'Owns promotions: create/edit promotions and submit them for review. Read-only on other content.',
+      permissions: () => [
+        ...cmPerms(strapi, PROMOTION, ['create', 'read', 'update'], notSystemField),
+        ...cmPerms(strapi, WORKFLOW_UIDS.filter((u) => u !== PROMOTION[0]), ['read']),
+        ...UPLOAD_EDIT.map(perm),
+      ],
+    },
+    {
+      name: ROLES.branchAdmin,
+      description: 'Owns branch / contact information (Contact Us): edit and submit for review. Read-only on other content.',
+      permissions: () => [
+        ...cmPerms(strapi, CONTACT, ['create', 'read', 'update'], notSystemField),
+        ...cmPerms(strapi, WORKFLOW_UIDS.filter((u) => u !== CONTACT[0]), ['read']),
+        ...UPLOAD_EDIT.map(perm),
+      ],
+    },
+    {
+      name: ROLES.systemAdmin,
+      description: 'Invites, activates and deactivates CMS users and assigns roles. No content permissions (separation of duties).',
+      permissions: () => [
+        ...['admin::users.create', 'admin::users.read', 'admin::users.update', 'admin::users.delete', 'admin::roles.read'].map(perm),
+        ...(strapi.getModel(AUDIT_UID as any) ? cmPerms(strapi, [AUDIT_UID], ['read']) : []),
+      ],
     },
   ];
 
@@ -101,46 +122,26 @@ export async function ensureRoles(strapi: Core.Strapi): Promise<Record<string, n
   return ids;
 }
 
-export async function ensureTestUsers(strapi: Core.Strapi, roleIds: Record<string, number>) {
-  const password = process.env.SEED_TEST_USER_PASSWORD;
-  if (!password || password.startsWith('CHANGE_ME')) {
-    strapi.log.warn('[poc-rbac] SEED_TEST_USER_PASSWORD not set — test users not created');
+/**
+ * Creates ONLY the first Super Admin (so /admin's open first-run registration form is closed), from
+ * SEED_SUPERADMIN_EMAIL / SEED_SUPERADMIN_PASSWORD. No other user is ever created with a known password:
+ * the System Administrator invites everyone else from Settings > Administration Panel > Users > Invite new user;
+ * each invitee sets their own password through the one-time registration link.
+ */
+export async function ensureBootstrapAdmin(strapi: Core.Strapi) {
+  const superAdmins = await strapi.db.query('admin::user').count({ where: { roles: { code: SUPER_ADMIN_CODE } } });
+  if (superAdmins > 0) return;
+  const email = process.env.SEED_SUPERADMIN_EMAIL;
+  const password = process.env.SEED_SUPERADMIN_PASSWORD;
+  if (!email || !password || password.startsWith('CHANGE_ME')) {
+    strapi.log.warn('[poc-rbac] No Super Admin yet and SEED_SUPERADMIN_EMAIL/PASSWORD not set — register one at /admin');
     return;
   }
-  const users = [
-    { email: 'editor@poc.local', firstname: 'Erin', lastname: 'Editor', role: ROLES.editor },
-    { email: 'news.editor@poc.local', firstname: 'Nimal', lastname: 'NewsEditor', role: ROLES.newsEditor },
-    { email: 'reviewer@poc.local', firstname: 'Rehana', lastname: 'Reviewer', role: ROLES.reviewer },
-    { email: 'approver@poc.local', firstname: 'Arjun', lastname: 'Approver', role: ROLES.approver },
-    { email: 'publisher@poc.local', firstname: 'Priya', lastname: 'Publisher', role: ROLES.publisher },
-  ];
-  const userService: any = strapi.service('admin::user');
-
-  // Creating ANY admin user closes Strapi's first-run "register super admin" screen, so make sure a
-  // Super Admin exists first (finding: the first-run registration form is open to anyone who reaches /admin
-  // until an admin exists — protect /admin at the network level from the very first deployment).
-  const superAdmins = await strapi.db.query('admin::user').count({ where: { roles: { code: 'strapi-super-admin' } } });
-  if (superAdmins === 0) {
-    const email = process.env.SEED_SUPERADMIN_EMAIL;
-    const saPassword = process.env.SEED_SUPERADMIN_PASSWORD;
-    if (!email || !saPassword || saPassword.startsWith('CHANGE_ME')) {
-      strapi.log.warn('[poc-rbac] No Super Admin yet and SEED_SUPERADMIN_EMAIL/PASSWORD not set — register one at /admin, then restart to create test users');
-      return;
-    }
-    const superRole = await (strapi.service('admin::role') as any).getSuperAdmin();
-    await userService.create({ email, firstname: 'PoC', lastname: 'SuperAdmin', password: saPassword, roles: [superRole.id], isActive: true, registrationToken: null });
-    strapi.log.info(`[poc-rbac] Created Super Admin ${email}`);
-  }
-
-  for (const u of users) {
-    const exists = await strapi.db.query('admin::user').findOne({ where: { email: u.email } });
-    if (exists) continue;
-    await userService.create({
-      email: u.email, firstname: u.firstname, lastname: u.lastname, password,
-      roles: [roleIds[u.role]], isActive: true, registrationToken: null,
-    });
-    strapi.log.info(`[poc-rbac] Created test user ${u.email} (${u.role})`);
-  }
+  const superRole = await (strapi.service('admin::role') as any).getSuperAdmin();
+  await (strapi.service('admin::user') as any).create({
+    email, firstname: 'Bootstrap', lastname: 'Admin', password, roles: [superRole.id], isActive: true, registrationToken: null,
+  });
+  strapi.log.info(`[poc-rbac] Created bootstrap Super Admin ${email}. Use it once to invite a System Administrator, then store the credentials offline.`);
 }
 
 /** Public (unauthenticated) content-API permissions: read-only, published content only. */

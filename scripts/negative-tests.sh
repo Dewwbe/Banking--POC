@@ -2,7 +2,9 @@
 # Workstreams B, C, E — automated negative tests and the critical approval scenario, executed
 # against the REAL admin and content APIs (not just the UI).
 #
-# Prerequisites: stack running with SEED_TEST_USERS=true and SEED_SAMPLE_CONTENT=true; jq installed.
+# Prerequisites: stack running with SEED_SAMPLE_CONTENT=true; jq installed. Users are NOT seeded: have the System
+# Administrator invite one test user per role, then export their credentials (never commit them):
+#   AUTHOR_EMAIL EDITOR_EMAIL COMPLIANCE_EMAIL PUBLISHER_EMAIL PROMO_ADMIN_EMAIL  (+ the matching *_PASSWORD)
 # Usage:
 #   ./scripts/negative-tests.sh                 # run all checks
 #   FULL_ACCESS_TOKEN=xxx ./scripts/negative-tests.sh   # also test API-token publish bypass (create token in admin)
@@ -12,7 +14,6 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 source .env
 CMS=${CMS_URL:-http://localhost:1337}
-PW=$SEED_TEST_USER_PASSWORD
 UID_P="api::product.product"
 TS=$(date -u +%Y%m%dT%H%M%SZ)
 OUT="docs/evidence/negative-tests-$TS.txt"
@@ -20,9 +21,11 @@ mkdir -p docs/evidence
 exec > >(tee "$OUT") 2>&1
 PASS=0; FAIL=0
 
-login() {   # $1 email → prints admin access token
+login() {   # $1 = env-var prefix (AUTHOR -> AUTHOR_EMAIL/AUTHOR_PASSWORD); prints admin token
+  local e="${1}_EMAIL" p="${1}_PASSWORD"
+  if [ -z "${!e:-}" ] || [ -z "${!p:-}" ]; then return 0; fi
   curl -s -X POST "$CMS/admin/login" -H 'Content-Type: application/json' \
-    -d "{\"email\":\"$1\",\"password\":\"$PW\"}" | jq -r '.data.token // .data.accessToken // empty'
+    -d "{\"email\":\"${!e}\",\"password\":\"${!p}\"}" | jq -r '.data.token // .data.accessToken // empty'
 }
 req() {     # method url token [json] → prints "STATUS BODY"
   local m=$1 u=$2 t=$3 d=${4:-}
@@ -39,8 +42,8 @@ expect() {  # id description actual expected-regex
 cm() { echo "$CMS/content-manager/collection-types/$UID_P/$1"; }
 
 echo "== Strapi PoC negative tests — $TS — $CMS"
-ED=$(login editor@poc.local); RV=$(login reviewer@poc.local); AP=$(login approver@poc.local); PB=$(login publisher@poc.local)
-for v in ED RV AP PB; do [ -z "${!v}" ] && { echo "Login failed for $v — are test users seeded?"; exit 1; }; done
+ED=$(login AUTHOR); RV=$(login EDITOR); AP=$(login COMPLIANCE); PB=$(login PUBLISHER)
+for v in ED RV AP PB; do [ -z "${!v}" ] && { echo "Login failed for $v — set the *_EMAIL/*_PASSWORD variables for invited users"; exit 1; }; done
 
 # Locate the seeded demo product
 req GET "$(cm '')?locale=en&filters[slug][\$eq]=fixed-deposit" "$ED" >/dev/null
@@ -57,11 +60,11 @@ RATE=$(req GET "$(cm "$DOC")?locale=en" "$PB" >/dev/null; jq -r '.data.interestR
 # Strapi field-level RBAC SILENTLY DROPS fields the role may not update (HTTP 200) instead of returning 403.
 [ "$RATE" != "99.99" ] && { echo "PASS  RBAC-03  Reviewer cannot change interest rate — field ignored (HTTP $CODE, rate still $RATE)"; PASS=$((PASS+1)); } \
                       || { echo "FAIL  RBAC-03  Reviewer changed the interest rate to $RATE"; FAIL=$((FAIL+1)); }
-expect RBAC-04 "Editor cannot read audit log"       "$(req GET "$CMS/content-manager/collection-types/api::audit-log.audit-log" "$ED")" "403"
-expect RBAC-05 "Editor cannot list admin users"     "$(req GET "$CMS/admin/users" "$ED")" "403"
-NEWS_ED=$(login news.editor@poc.local)
-expect RBAC-06 "News-only editor cannot read products (content-type restriction)" \
-  "$(req GET "$(cm '')?locale=en" "$NEWS_ED")" "403"
+expect RBAC-04 "Author cannot read audit log"       "$(req GET "$CMS/content-manager/collection-types/api::audit-log.audit-log" "$ED")" "403"
+expect RBAC-05 "Author cannot list admin users"     "$(req GET "$CMS/admin/users" "$ED")" "403"
+PROMO=$(login PROMO_ADMIN)
+expect RBAC-06 "Promotions Administrator cannot edit products (content-type restriction)" \
+  "$(req PUT "$(cm "$DOC")?locale=en" "$PROMO" '{"interestRate":1}')" "403"
 echo
 
 echo "-- Workstream C: approval workflow enforcement"
@@ -118,7 +121,7 @@ echo "-- Workstream E: admin login rate limiting"
 LAST=""
 for i in $(seq 1 8); do
   LAST=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$CMS/admin/login" -H 'Content-Type: application/json' \
-    -d '{"email":"editor@poc.local","password":"wrong-password"}')
+    -d '{"email":"nobody@example.invalid","password":"wrong-password"}')
 done
 expect SEC-03 "Repeated failed logins are throttled" "$LAST" "429"
 echo
