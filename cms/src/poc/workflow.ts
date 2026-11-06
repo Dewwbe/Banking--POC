@@ -1,7 +1,7 @@
 import type { Core } from '@strapi/strapi';
 import { errors } from '@strapi/utils';
 import { AUDIT_UID, flags, Stage, SYSTEM_WORKFLOW_FIELDS, WORKFLOW_UIDS } from './constants';
-import { Actor, getActor, isApprover, isEditor, isPublisher, isReviewer } from './actor';
+import { Actor, getActor, isAuthor, isComplianceReviewer, isEditor, isPublisher } from './actor';
 import { changedFields, contentHash, loadVersion, normalize } from './content-hash';
 import { writeAudit } from './audit';
 
@@ -22,13 +22,13 @@ const READ_ACTIONS = new Set(['findOne', 'findFirst', 'findMany', 'count']);
 
 type Transition = { roles: (a: Actor) => boolean; label: string };
 const TRANSITIONS: Record<string, Transition> = {
-  'draft>in_review': { roles: isEditor, label: 'Bank Editor' },
-  'changes_requested>in_review': { roles: isEditor, label: 'Bank Editor' },
-  'approved>in_review': { roles: isEditor, label: 'Bank Editor' }, // resubmission of a changed, previously approved item
-  'in_review>awaiting_approval': { roles: isReviewer, label: 'Bank Reviewer' },
-  'in_review>changes_requested': { roles: isReviewer, label: 'Bank Reviewer' },
-  'awaiting_approval>approved': { roles: isApprover, label: 'Bank Approver' },
-  'awaiting_approval>changes_requested': { roles: isApprover, label: 'Bank Approver' },
+  'draft>in_review': { roles: isAuthor, label: 'Author' },
+  'changes_requested>in_review': { roles: isAuthor, label: 'Author' },
+  'approved>in_review': { roles: isAuthor, label: 'Author' }, // resubmission of a changed, previously approved item
+  'in_review>awaiting_approval': { roles: isEditor, label: 'Editor' },
+  'in_review>changes_requested': { roles: isEditor, label: 'Editor' },
+  'awaiting_approval>approved': { roles: isComplianceReviewer, label: 'Compliance Reviewer' },
+  'awaiting_approval>changes_requested': { roles: isComplianceReviewer, label: 'Compliance Reviewer' },
 };
 
 class Denied extends Error {
@@ -44,7 +44,7 @@ function checkTransition(actor: Actor, current: any, from: Stage, to: Stage) {
 
   if (to === 'draft') {
     // Withdrawing / resetting is allowed for any workflow participant.
-    if (isEditor(actor) || isReviewer(actor) || isApprover(actor)) return;
+    if (isAuthor(actor) || isEditor(actor) || isComplianceReviewer(actor)) return;
     throw new Denied(403, 'Only workflow participants can move content back to draft');
   }
   const rule = TRANSITIONS[`${from}>${to}`];
@@ -230,7 +230,7 @@ export function registerWorkflow(strapi: Core.Strapi) {
         if (actor.channel === 'content-api') throw new Denied(403, 'Publishing through the content API is not permitted');
         const override = actor.isSuperAdmin && flags.superAdminOverride();
         if (actor.channel === 'admin' && !isPublisher(actor) && !override) {
-          throw new Denied(403, 'Only users with the "Bank Publisher" role may publish');
+          throw new Denied(403, 'Only users with the "Publisher" role may publish');
         }
         for (const l of locales) {
           const draft = await loadVersion(strapi, uid, params.documentId, l, 'draft');
@@ -260,7 +260,7 @@ export function registerWorkflow(strapi: Core.Strapi) {
     async function handleOther() {
       if (actor.channel === 'content-api') throw new Denied(403, `"${action}" through the content API is not permitted`);
       if (action === 'unpublish' && actor.channel === 'admin' && !isPublisher(actor) && !actor.isSuperAdmin) {
-        throw new Denied(403, 'Only "Bank Publisher" (or Super Admin for emergency takedown) may unpublish');
+        throw new Denied(403, 'Only "Publisher" (or Super Admin for emergency takedown) may unpublish');
       }
       const locale = typeof params.locale === 'string' ? params.locale : undefined;
       const snapshot = params.documentId

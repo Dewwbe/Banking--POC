@@ -26,17 +26,12 @@ const queue = (stage: Stage, hint: string): Queue => ({ stage, title: STAGE_TITL
 
 /** Role name → what that role works on. Names are stable; role codes carry a random suffix per environment. */
 const QUEUES_BY_ROLE: Record<string, { label: string; queues: Queue[] }> = {
-  'Bank Editor': {
-    label: 'Editor',
-    queues: [queue('changes_requested', 'Fix these and submit them for review again.'), queue('draft', 'Finish and submit for review.')],
-  },
-  'Bank News Editor': {
-    label: 'News Editor',
-    queues: [queue('changes_requested', 'Fix these and submit them for review again.'), queue('draft', 'Finish and submit for review.')],
-  },
-  'Bank Reviewer': { label: 'Reviewer', queues: [queue('in_review', 'Check the content, then pass it to approval or request changes.')] },
-  'Bank Approver': { label: 'Approver', queues: [queue('awaiting_approval', 'Compliance check: approve or request changes.')] },
-  'Bank Publisher': { label: 'Publisher', queues: [queue('approved', 'Open the item and press Publish.')] },
+  Author: { label: 'Author', queues: [queue('changes_requested', 'Fix these and submit them for review again.'), queue('draft', 'Finish and submit for review.')], },
+  'Promotions Administrator': { label: 'Promotions Administrator', queues: [queue('changes_requested', 'Fix these and submit them for review again.'), queue('draft', 'Finish and submit for review.')], },
+  'Branch Administrator': { label: 'Branch Administrator', queues: [queue('changes_requested', 'Fix these and submit them for review again.'), queue('draft', 'Finish and submit for review.')], },
+  Editor: { label: 'Editor', queues: [queue('in_review', 'Check the content, then pass it to compliance or request changes.')] },
+  'Compliance Reviewer': { label: 'Compliance Reviewer', queues: [queue('awaiting_approval', 'Compliance check: approve or request changes.')] },
+  Publisher: { label: 'Publisher', queues: [queue('approved', 'Open the item and press Publish.')] },
 };
 
 const ALL_STAGES: Queue[] = (Object.keys(STAGE_TITLES) as Stage[]).map((s) => queue(s, ''));

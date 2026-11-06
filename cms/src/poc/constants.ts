@@ -18,11 +18,13 @@ export const AUDIT_UID = 'api::audit-log.audit-log';
 
 /** Custom admin roles created by bootstrap (src/poc/rbac.ts). Names are the contract with the workflow rules. */
 export const ROLES = {
-  editor: 'Bank Editor',
-  newsEditor: 'Bank News Editor',
-  reviewer: 'Bank Reviewer',
-  approver: 'Bank Approver',
-  publisher: 'Bank Publisher',
+  author: 'Author',
+  editor: 'Editor',
+  publisher: 'Publisher',
+  promotionsAdmin: 'Promotions Administrator',
+  branchAdmin: 'Branch Administrator',
+  complianceReviewer: 'Compliance Reviewer',
+  systemAdmin: 'System Administrator',
 } as const;
 
 export const SUPER_ADMIN_CODE = 'strapi-super-admin';
