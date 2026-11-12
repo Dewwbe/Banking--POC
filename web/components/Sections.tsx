@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Blocks } from './Blocks';
+import { LangTag } from './FallbackNotice';
 import { mediaUrl } from '@/lib/strapi';
 
 /** Renders reusable Strapi components (Banner, Card group, FAQ group, CTA block, Rich text, Legal notice). */
@@ -77,6 +78,7 @@ export function ProductCard({ p, locale }: { p: any; locale: string }) {
           {p.category.replaceAll('_', ' ')}
         </span>
       )}
+      {p._fallbackFrom && <div className="mb-2"><LangTag locale={locale} from={p._fallbackFrom} /></div>}
       <h3 className="text-lg font-bold text-ink">{p.name}</h3>
       {p.interestRate != null && (
         <p className="mt-2 text-3xl font-extrabold text-brand">

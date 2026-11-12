@@ -1,6 +1,16 @@
+import type { Metadata } from 'next';
+import { buildMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
+import { FallbackNotice } from '@/components/FallbackNotice';
 import { SectionHeading, Sections } from '@/components/Sections';
 import { getContact, isLocale } from '@/lib/strapi';
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const c = await getContact(locale);
+  return buildMetadata({ locale, path: '/contact', title: c?.title, seo: c?.seo, fallbackFrom: c?._fallbackFrom });
+}
 
 export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -10,6 +20,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
 
   return (
     <>
+      <FallbackNotice locale={locale} from={c._fallbackFrom} />
       <header className="rounded-3xl bg-gradient-to-br from-[#4f2c85] via-brand to-lilac p-8 text-white sm:p-12">
         <h1 className="text-4xl font-extrabold tracking-tight">{c.title}</h1>
         <p className="mt-3 text-lg font-medium">We are here to help.</p>

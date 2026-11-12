@@ -1,20 +1,39 @@
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { buildMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { isLocale, LOCALES } from '@/lib/strapi';
+import { SubscribeForm } from '@/components/SubscribeForm';
+import { getMenu, isLocale, LOCALES, type MenuNode } from '@/lib/strapi';
 import '../globals.css';
 
 const NAV: Record<string, Record<string, string>> = {
-  en: { products: 'Products', news: 'News', promotions: 'Promotions', about: 'About Us', contact: 'Contact Us' },
-  si: { products: 'නිෂ්පාදන', news: 'පුවත්', promotions: 'ප්‍රවර්ධන', about: 'අප ගැන', contact: 'අප අමතන්න' },
-  ta: { products: 'தயாரிப்புகள்', news: 'செய்திகள்', promotions: 'சலுகைகள்', about: 'எங்களைப் பற்றி', contact: 'தொடர்பு' },
+  en: { products: 'Products', rates: 'Rates', news: 'News', promotions: 'Promotions', about: 'About Us', contact: 'Contact Us' },
+  si: { products: 'නිෂ්පාදන', rates: 'පොලී අනුපාත', news: 'පුවත්', promotions: 'ප්‍රවර්ධන', about: 'අප ගැන', contact: 'අප අමතන්න' },
+  ta: { products: 'தயாரிப்புகள்', rates: 'வட்டி விகிதங்கள்', news: 'செய்திகள்', promotions: 'சலுகைகள்', about: 'எங்களைப் பற்றி', contact: 'தொடர்பு' },
 };
+
+/** Menu URLs are stored locale-agnostic ("/products"); external links are kept as-is. */
+const hrefFor = (locale: string, url: string) => (/^https?:\/\//.test(url) ? url : `/${locale}${url.startsWith('/') ? url : `/${url}`}`);
+
+/** Built-in links, used until a menu has been published in the CMS (Menu items). */
+const fallbackMenu = (t: Record<string, string>, keys: string[]): MenuNode[] =>
+  keys.map((k) => ({ documentId: k, label: t[k], url: `/${k}`, children: [] }));
+
+/** Default metadata for every page under /[locale]; pages override it with their own CMS-managed meta data. */
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return isLocale(locale) ? buildMetadata({ locale, path: '' }) : {};
+}
 
 export default async function LocaleLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const t = NAV[locale];
-  const { contact, ...mainNav } = t;
+  const { contact } = t;
+  const [header, footer] = await Promise.all([getMenu(locale, 'header').catch(() => []), getMenu(locale, 'footer').catch(() => [])]);
+  const headerMenu = header.length ? header : fallbackMenu(t, ['products', 'rates', 'news', 'promotions', 'about']);
+  const footerMenu = footer.length ? footer : fallbackMenu(t, ['products', 'rates', 'news', 'promotions', 'about', 'contact']);
 
   return (
     <html lang={locale}>
@@ -30,8 +49,19 @@ export default async function LocaleLayout({ children, params }: { children: Rea
               <span className="text-xl font-bold tracking-tight text-brand-dark">PoC Bank</span>
             </Link>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              {Object.entries(mainNav).map(([k, label]) => (
-                <Link key={k} href={`/${locale}/${k}`} className="text-sm font-medium text-ink hover:text-brand">{label}</Link>
+              {headerMenu.map((m) => (
+                <div key={m.documentId} className="group relative">
+                  <Link href={hrefFor(locale, m.url)} target={m.openInNewTab ? '_blank' : undefined} className="text-sm font-medium text-ink hover:text-brand">
+                    {m.label}{m.children.length > 0 && <span aria-hidden className="ml-1 text-xs">▾</span>}
+                  </Link>
+                  {m.children.length > 0 && (
+                    <div className="invisible absolute left-0 top-full z-30 min-w-44 rounded-xl border border-line bg-white py-2 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                      {m.children.map((c) => (
+                        <Link key={c.documentId} href={hrefFor(locale, c.url)} target={c.openInNewTab ? '_blank' : undefined} className="block px-4 py-2 text-sm text-ink hover:bg-lilac-soft hover:text-brand">{c.label}</Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             <div className="ml-auto flex items-center gap-4">
@@ -56,8 +86,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
             <div className="text-sm">
               <p className="mb-2 font-semibold">Explore</p>
               <ul className="space-y-1.5 text-white/80">
-                {Object.entries(t).map(([k, label]) => (
-                  <li key={k}><Link href={`/${locale}/${k}`} className="hover:text-white">{label}</Link></li>
+                {footerMenu.map((m) => (
+                  <li key={m.documentId}><Link href={hrefFor(locale, m.url)} target={m.openInNewTab ? '_blank' : undefined} className="hover:text-white">{m.label}</Link></li>
                 ))}
               </ul>
             </div>
@@ -65,6 +95,9 @@ export default async function LocaleLayout({ children, params }: { children: Rea
               <p className="mb-2 font-semibold text-white">Important</p>
               <p>Rates and offers are indicative, subject to change and to the product terms. This site is for demonstration only and is not a real bank.</p>
             </div>
+          </div>
+          <div className="mx-auto max-w-6xl border-t border-white/15 px-4 py-8">
+            <SubscribeForm locale={locale} />
           </div>
         </footer>
       </body>

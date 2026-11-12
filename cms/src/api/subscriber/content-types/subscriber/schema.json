@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "subscribers",
+  "info": {
+    "singularName": "subscriber",
+    "pluralName": "subscribers",
+    "displayName": "Subscriber",
+    "description": "Newsletter / update subscribers (personal data). Not exposed through the public REST API; managed in the Subscribers dashboard."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": {
+      "localized": false
+    }
+  },
+  "attributes": {
+    "email": {
+      "type": "email",
+      "required": true,
+      "unique": true
+    },
+    "subscriptionStatus": {
+      "type": "enumeration",
+      "enum": ["pending", "active", "unsubscribed"],
+      "default": "pending",
+      "required": true
+    },
+    "language": {
+      "type": "enumeration",
+      "enum": ["en", "si", "ta"],
+      "default": "en"
+    },
+    "source": {
+      "type": "string",
+      "default": "website"
+    },
+    "consentAt": {
+      "type": "datetime"
+    },
+    "confirmedAt": {
+      "type": "datetime"
+    },
+    "unsubscribedAt": {
+      "type": "datetime"
+    },
+    "notes": {
+      "type": "text",
+      "maxLength": 500
+    }
+  }
+}

@@ -1,9 +1,15 @@
 import type { Core } from '@strapi/strapi';
 import { registerWorkflow } from './poc/workflow';
 import { registerAdminEvents } from './poc/admin-events';
+import { registerRollback } from './poc/rollback';
+import { registerScheduleApi } from './poc/schedule';
+import { registerSeoApi } from './poc/seo';
+import { registerVersionApi } from './poc/versions';
+import { backfillSourceHash, registerTranslationApi } from './poc/translations';
 import { ensurePublicPermissions, ensureBootstrapAdmin, ensureRoles } from './poc/rbac';
 import { ensureRevalidateWebhook } from './poc/webhooks';
 import { seedSampleContent } from './poc/seed';
+import { seedBannerMenuRates } from './poc/seed-extras';
 import { asSystem } from './poc/actor';
 
 export default {
@@ -17,6 +23,11 @@ export default {
 
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
     registerAdminEvents(strapi);
+    registerScheduleApi(strapi);
+    registerRollback(strapi);
+    registerVersionApi(strapi);
+    registerTranslationApi(strapi);
+    registerSeoApi(strapi);
     // Everything below runs as an attributed system task, so audit entries say "system:bootstrap".
     await asSystem('bootstrap', () => setup(strapi));
   },
@@ -28,8 +39,10 @@ async function setup(strapi: Core.Strapi) {
 
     await ensureRoles(strapi);
     await ensureBootstrapAdmin(strapi);
+    await backfillSourceHash(strapi);
     if (process.env.SEED_SAMPLE_CONTENT === 'true') {
       await seedSampleContent(strapi).catch((e) => strapi.log.error(`[poc-seed] ${e.stack ?? e.message}`));
+      await seedBannerMenuRates(strapi).catch((e) => strapi.log.error(`[poc-seed] ${e.stack ?? e.message}`));
     }
     await ensureRevalidateWebhook(strapi);
 

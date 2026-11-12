@@ -5,7 +5,7 @@
     "singularName": "promotion",
     "pluralName": "promotions",
     "displayName": "Promotion",
-    "description": "Time-bound promotions \u2014 startDate/endDate drive custom scheduling and expiry"
+    "description": "Time-bound promotions — startDate/endDate drive custom scheduling and expiry"
   },
   "options": {
     "draftAndPublish": true
@@ -172,6 +172,15 @@
       }
     },
     "approvedHash": {
+      "type": "string",
+      "private": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
+    "sourceHash": {
       "type": "string",
       "private": true,
       "pluginOptions": {

@@ -1,6 +1,14 @@
+import type { Metadata } from 'next';
+import { buildMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
+import { Banners } from '@/components/Banners';
 import { ProductCard } from '@/components/Sections';
 import { getProducts, isLocale } from '@/lib/strapi';
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return isLocale(locale) ? buildMetadata({ locale, path: '/products', listing: 'products' }) : {};
+}
 
 export default async function ProductsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -16,6 +24,7 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
 
   return (
     <div className="space-y-10">
+      <Banners locale={locale} placement="products_top" />
       <header className="rounded-3xl bg-gradient-to-br from-[#4f2c85] via-brand to-lilac p-8 text-white sm:p-12">
         <h1 className="text-4xl font-extrabold tracking-tight">Products</h1>
         <p className="mt-3 max-w-2xl text-lg font-medium">Savings, deposits and everyday banking designed around you.</p>

@@ -1,6 +1,14 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { buildMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
+import { LangTag } from '@/components/FallbackNotice';
 import { getNewsList, isLocale } from '@/lib/strapi';
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return isLocale(locale) ? buildMetadata({ locale, path: '/news', listing: 'news' }) : {};
+}
 
 export default async function NewsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -21,6 +29,7 @@ export default async function NewsPage({ params }: { params: Promise<{ locale: s
             <div className="flex items-center gap-3 text-xs">
               {n.category && <span className="rounded-full bg-lilac-soft px-3 py-1 font-semibold capitalize text-brand-dark">{n.category.replaceAll('_', ' ')}</span>}
               <time className="text-muted">{n.publicationDate}</time>
+              <LangTag locale={locale} from={n._fallbackFrom} />
             </div>
             <h2 className="mt-3 text-lg font-bold group-hover:text-brand">{n.title}</h2>
             {n.excerpt && <p className="mt-2 text-sm leading-relaxed text-muted">{n.excerpt}</p>}

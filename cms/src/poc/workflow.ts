@@ -4,6 +4,7 @@ import { AUDIT_UID, flags, Stage, SYSTEM_WORKFLOW_FIELDS, WORKFLOW_UIDS } from '
 import { Actor, getActor, isAuthor, isComplianceReviewer, isEditor, isPublisher } from './actor';
 import { changedFields, contentHash, loadVersion, normalize } from './content-hash';
 import { writeAudit } from './audit';
+import { currentSourceHash, translationBlockers } from './translations';
 
 /**
  * CUSTOM approval workflow prototype (Workstream C) — a stand-in for Enterprise Review Workflows.
@@ -207,6 +208,11 @@ export function registerWorkflow(strapi: Core.Strapi) {
       if (finalStage === 'in_review' && current !== 'in_review') patch.submittedBy = actor.email;
       if (finalStage === 'awaiting_approval') patch.reviewedBy = actor.email;
       if (finalStage === 'approved' && current !== 'approved') Object.assign(patch, { approvedBy: actor.email, approvedAt: new Date(), approvedHash: afterHash });
+      // Translation tracking: remember which version of the source-language text this save was made against.
+      if (contentChanged && locale !== (await defaultLocale(strapi))) {
+        const h = await currentSourceHash(strapi, uid, params.documentId);
+        if (h) patch.sourceHash = h;
+      }
       if (after?.id) await strapi.db.query(uid as any).update({ where: { id: after.id }, data: patch });
 
       void writeAudit(strapi, {
@@ -239,6 +245,10 @@ export function registerWorkflow(strapi: Core.Strapi) {
           if (draft.workflowStage !== 'approved') throw new Denied(400, `[${l}] cannot be published: stage is "${draft.workflowStage}", approval required`);
           if (contentHash(draft) !== draft.approvedHash) throw new Denied(400, `[${l}] content changed after approval — re-approval required`);
           if (actor.channel === 'admin' && draft.approvedBy === actor.email) throw new Denied(403, `[${l}] Separation of duties: the approver cannot publish`);
+          // Cross-language consistency: an outdated translation, or numbers that differ from the source language
+          // (e.g. a rate), must not go live. Applies to scheduled publishing too. CONSISTENCY_BLOCK_PUBLISH=false disables.
+          const blockers = await translationBlockers(strapi, uid, params.documentId, l);
+          if (blockers.length) throw new Denied(400, `[${l}] cannot be published — ${blockers[0]}${blockers.length > 1 ? ` (+${blockers.length - 1} more issue(s))` : ''}`);
         }
       }
 

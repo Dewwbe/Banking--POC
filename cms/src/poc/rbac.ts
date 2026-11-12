@@ -1,5 +1,5 @@
 import type { Core } from '@strapi/strapi';
-import { AUDIT_UID, LOCALES, ROLES, SUPER_ADMIN_CODE, SYSTEM_WORKFLOW_FIELDS, WORKFLOW_UIDS } from './constants';
+import { AUDIT_UID, LOCALES, ROLES, SINGLE_TYPES, SUPER_ADMIN_CODE, SYSTEM_WORKFLOW_FIELDS, WORKFLOW_UIDS } from './constants';
 
 /**
  * Workstream B — creates the PoC admin roles with field-, locale- and content-type-level permissions using
@@ -49,9 +49,49 @@ const onlyWorkflowDecision = (f: string) => f === 'workflowStage' || f === 'revi
 const onlyStage = (f: string) => f === 'workflowStage';
 
 const perm = (action: string): Perm => ({ action, subject: null, properties: {}, conditions: [] });
-const PROMOTION = ['api::promotion.promotion'] as const;
+const PROMOTION = ['api::promotion.promotion', 'api::banner.banner'] as const;
 const CONTACT = ['api::contact-us.contact-us'] as const;
-const AUTHOR_TYPES = WORKFLOW_UIDS.filter((u) => u !== PROMOTION[0] && u !== CONTACT[0]);
+const AUTHOR_TYPES = WORKFLOW_UIDS.filter((u) => !(PROMOTION as readonly string[]).includes(u) && u !== CONTACT[0]);
+
+/**
+ * One-time migration for databases created before Banner / Menu item / Rate existed: roles are only built when
+ * missing (so manual edits in the admin are never overwritten), which would leave existing roles without access to
+ * the new content types. This adds ONLY the permissions for those types, once per role.
+ */
+const SUBSCRIBER = 'api::subscriber.subscriber';
+/** Subscribers are personal data: not localized, no draft/publish, no workflow. Field list is explicit. */
+function subscriberPerms(actions: string[]): Perm[] {
+  const fields = ['email', 'subscriptionStatus', 'language', 'source', 'consentAt', 'confirmedAt', 'unsubscribedAt', 'notes'];
+  return actions.map((a) => ({ action: `${CM}.${a}`, subject: SUBSCRIBER, properties: ['create', 'read', 'update'].includes(a) ? { fields } : {}, conditions: [] }));
+}
+const NEW_TYPES = ['api::banner.banner', 'api::menu-item.menu-item', 'api::rate.rate'];
+async function migrateNewTypes(strapi: Core.Strapi, roleService: any, roleId: number, def: { name: string; permissions: () => Perm[] }, key: string, types: string[]) {
+  const store = strapi.store({ type: 'plugin', name: 'poc-rbac', key: `${key}:${def.name}` });
+  if (await store.get({})) return;
+  try {
+    const wanted = def.permissions().filter((p) => p.subject && types.includes(p.subject));
+    if (wanted.length) await roleService.addPermissions(roleId, wanted);
+    await store.set({ value: true });
+    if (wanted.length) strapi.log.info(`[poc-rbac] Added ${wanted.length} ${key} permissions to existing role "${def.name}"`);
+  } catch (err) {
+    strapi.log.warn(`[poc-rbac] Could not add ${key} permissions to "${def.name}": ${(err as Error).message}. Edit the role in Settings → Roles.`);
+  }
+}
+
+const BUILTIN_CODES = ['strapi-editor', 'strapi-author'];
+async function takeOverBuiltinRole(strapi: Core.Strapi, roleService: any, role: any, def: { name: string; description: string; permissions: () => Perm[] }) {
+  const store = strapi.store({ type: 'plugin', name: 'poc-rbac', key: `builtin-takeover:${def.name}` });
+  if (await store.get({})) return;
+  try {
+    await roleService.assignPermissions(role.id, def.permissions());
+    await strapi.db.query('admin::role').update({ where: { id: role.id }, data: { description: def.description } });
+    await store.set({ value: true });
+    for (const key of ['banner-menu-rate', 'subscribers', 'seo-settings']) await strapi.store({ type: 'plugin', name: 'poc-rbac', key: `${key}:${def.name}` }).set({ value: true });
+    strapi.log.info(`[poc-rbac] Replaced the built-in "${def.name}" role's default permissions with the PoC permission set`);
+  } catch (err) {
+    strapi.log.error(`[poc-rbac] Could not take over the built-in "${def.name}" role: ${(err as Error).message}. Its default permissions are STILL ACTIVE — configure it in Settings → Roles.`);
+  }
+}
 
 export async function ensureRoles(strapi: Core.Strapi): Promise<Record<string, number>> {
   const roleService: any = strapi.service('admin::role');
@@ -60,7 +100,7 @@ export async function ensureRoles(strapi: Core.Strapi): Promise<Record<string, n
   const definitions: Array<{ name: string; description: string; permissions: () => Perm[] }> = [
     {
       name: ROLES.author,
-      description: 'Create and edit drafts of products, news and page content; submit for review. Cannot publish, delete or edit approval metadata.',
+      description: 'Create and edit drafts of products, rates, menu, news and page content; submit for review. Cannot publish, delete or edit approval metadata.',
       permissions: () => [...cmPerms(strapi, AUTHOR_TYPES, ['create', 'read', 'update'], notSystemField), ...UPLOAD_EDIT.map(perm)],
     },
     {
@@ -80,10 +120,11 @@ export async function ensureRoles(strapi: Core.Strapi): Promise<Record<string, n
     },
     {
       name: ROLES.promotionsAdmin,
-      description: 'Owns promotions: create/edit promotions and submit them for review. Read-only on other content.',
+      description: 'Owns promotions and banners (create/edit and submit for review) and manages subscribers. Read-only on other content.',
       permissions: () => [
         ...cmPerms(strapi, PROMOTION, ['create', 'read', 'update'], notSystemField),
-        ...cmPerms(strapi, WORKFLOW_UIDS.filter((u) => u !== PROMOTION[0]), ['read']),
+        ...cmPerms(strapi, WORKFLOW_UIDS.filter((u) => !(PROMOTION as readonly string[]).includes(u)), ['read']),
+        ...subscriberPerms(['create', 'read', 'update', 'delete']),
         ...UPLOAD_EDIT.map(perm),
       ],
     },
@@ -98,20 +139,31 @@ export async function ensureRoles(strapi: Core.Strapi): Promise<Record<string, n
     },
     {
       name: ROLES.systemAdmin,
-      description: 'Invites, activates and deactivates CMS users and assigns roles. No content permissions (separation of duties).',
+      description: 'Invites, activates and deactivates CMS users and assigns roles; reads/erases subscribers. No content permissions (separation of duties).',
       permissions: () => [
         ...['admin::users.create', 'admin::users.read', 'admin::users.update', 'admin::users.delete', 'admin::roles.read'].map(perm),
         ...(strapi.getModel(AUDIT_UID as any) ? cmPerms(strapi, [AUDIT_UID], ['read']) : []),
+        ...subscriberPerms(['read', 'delete']), // read for support, delete for data-erasure requests
       ],
     },
   ];
 
   for (const def of definitions) {
     let role = await strapi.db.query('admin::role').findOne({ where: { name: def.name } });
+    // Strapi ships its OWN roles named "Editor" and "Author" (codes strapi-editor / strapi-author) with broad
+    // default permissions (e.g. audit-log access, "is creator" conditions). Looking roles up by name would silently
+    // adopt those instead of ours, so take them over once: replace the defaults with this PoC's permission set.
+    if (role && BUILTIN_CODES.includes(role.code)) await takeOverBuiltinRole(strapi, roleService, role, def);
+    if (role) {
+      await migrateNewTypes(strapi, roleService, role.id, def, 'banner-menu-rate', NEW_TYPES);
+      await migrateNewTypes(strapi, roleService, role.id, def, 'subscribers', [SUBSCRIBER]);
+      await migrateNewTypes(strapi, roleService, role.id, def, 'seo-settings', ['api::seo-setting.seo-setting']);
+    }
     if (!role) {
       role = await roleService.create({ name: def.name, description: def.description });
       try {
         await roleService.assignPermissions(role.id, def.permissions());
+        for (const key of ['banner-menu-rate', 'subscribers', 'seo-settings']) await strapi.store({ type: 'plugin', name: 'poc-rbac', key: `${key}:${def.name}` }).set({ value: true });
         strapi.log.info(`[poc-rbac] Created role "${def.name}" with ${def.permissions().length} permissions`);
       } catch (err) {
         strapi.log.warn(`[poc-rbac] Role "${def.name}" created but permissions could not be assigned automatically: ${(err as Error).message}. Configure it manually from docs/03-permission-matrix.md.`);
@@ -151,7 +203,7 @@ export async function ensurePublicPermissions(strapi: Core.Strapi) {
   const actions: string[] = [];
   for (const uid of WORKFLOW_UIDS) {
     actions.push(`${uid}.find`);
-    if (!['api::home.home', 'api::about-us.about-us', 'api::contact-us.contact-us'].includes(uid)) actions.push(`${uid}.findOne`);
+    if (!SINGLE_TYPES.includes(uid)) actions.push(`${uid}.findOne`);
   }
   actions.push('plugin::i18n.locales.listLocales');
   for (const action of actions) {

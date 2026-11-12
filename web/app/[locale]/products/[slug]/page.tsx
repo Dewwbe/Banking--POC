@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { buildMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Blocks } from '@/components/Blocks';
+import { FallbackNotice } from '@/components/FallbackNotice';
 import { getProduct, isLocale, mediaUrl } from '@/lib/strapi';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -10,7 +12,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isLocale(locale)) return {};
   const p = await getProduct(locale, slug);
-  return p ? { title: p.seo?.metaTitle ?? p.name, description: p.seo?.metaDescription ?? p.summary } : {};
+  if (!p) return {};
+  return buildMetadata({ locale, path: `/products/${slug}`, title: p.name, description: p.summary, seo: p.seo, image: p.heroImage, fallbackFrom: p._fallbackFrom });
 }
 
 export default async function ProductPage({ params }: Props) {
@@ -23,6 +26,7 @@ export default async function ProductPage({ params }: Props) {
   const kfd = mediaUrl(p.keyFactsDocument);
   return (
     <article className="space-y-8">
+      <FallbackNotice locale={locale} from={p._fallbackFrom} />
       <Link href={`/${locale}/products`} className="text-sm font-semibold text-brand hover:underline">← All products</Link>
 
       <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#4f2c85] via-brand to-lilac text-white">

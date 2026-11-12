@@ -40,6 +40,9 @@ const TYPES = [
   { uid: 'api::product.product', label: 'Product' },
   { uid: 'api::news-article.news-article', label: 'News article' },
   { uid: 'api::promotion.promotion', label: 'Promotion' },
+  { uid: 'api::banner.banner', label: 'Banner' },
+  { uid: 'api::menu-item.menu-item', label: 'Menu item' },
+  { uid: 'api::rate.rate', label: 'Rate' },
 ];
 
 type Item = { documentId: string; locale: string; label: string; type: string; uid: string; updatedAt: string };
@@ -57,7 +60,7 @@ async function loadQueue(client: ReturnType<typeof useFetchClient>, q: Queue): P
         .map<Item>((r) => ({
           documentId: r.documentId,
           locale: r.locale,
-          label: r.name ?? r.title ?? r.slug ?? r.documentId,
+          label: r.name ?? r.title ?? r.label ?? r.slug ?? r.documentId,
           type: t.label,
           uid: t.uid,
           updatedAt: r.updatedAt,

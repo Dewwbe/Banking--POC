@@ -47,6 +47,40 @@ docker compose logs -f cms             # wait for "[poc] Governance prototype ac
 | Branch Administrator | Owns branch/contact info (Contact Us): edit and submit for review |
 | System Administrator | Invites/deactivates users and assigns roles; no content access |
 
+### Publishing workflow: draft, approval, scheduling, rollback
+
+Open **Workflow Center** in the admin menu. Content moves Draft → In review (Author submits) → Awaiting approval (Editor passes) → Approved (Compliance Reviewer) → Published (Publisher). The server enforces the roles, separation of duties (the approver cannot publish or schedule) and the approval hash: editing approved content sends it back to Draft.
+
+- **Scheduling:** a Publisher can set *Publish at* (approved content only) and *Unpublish at* for every governed type except Promotions (their start/end dates are their schedule). A cron task checks every minute; if the content was edited after scheduling, the schedule is cancelled and audited instead of publishing unapproved content.
+- **Rollback:** each publish is stored in the audit log; a Publisher can *Restore* a previous published version. This only restores the **draft**, which then goes through approval again. Images/relations are not restored and are reported.
+- API: `POST /poc/schedule`, `GET /poc/history`, `POST /poc/rollback` (admin-authenticated; if you gate `/admin` in nginx, allow these paths for staff too).
+
+### Content versioning and history
+
+Strapi Community has no content history, so versions are built from the audit log (a full snapshot is stored on every create, content edit, publish and restore).
+
+- **Version history per item:** every governed content type's edit screen has a **Version history** side panel (also inside the Workflow Center): numbered versions, who/when, which one is the current draft and which is live.
+- **Comparison:** compare any two versions, a version against the current draft, or live against draft. Changes are shown field by field (text word-by-word, rich text as plain text, components/sections as line diffs).
+- **Restore:** Author-type roles (for the types they can edit), Publishers and Super Admin can restore an earlier version into the **draft**. It then goes through review → approval → publish again; nothing goes live by restoring. The previous draft stays in the history.
+- Limits: history starts when the audit log started; images/relations inside snapshots are reduced to a URL/hash, so they are not restored and are reported; edits made outside the Document Service (raw SQL, `strapi import`) are not captured.
+- API: `GET /poc/versions`, `GET /poc/versions/compare`, `POST /poc/rollback`.
+
+### Languages: fallback, translation workflow, consistency
+
+English is the source language; Sinhala and Tamil are translations, each with its own draft → review → approval → publish workflow.
+
+- **Fallback (website):** if an item or page is not *published* in the visitor's language, the English version is shown with a notice (pages) or a small `EN` tag (lists). Drafts and unpublished content are never used. Chain is `FALLBACK` in `web/lib/strapi.ts`.
+- **Translation workflow (admin → Translations):** matrix of every item × language (missing / stage / live / outdated). *Start translation* copies the English text into a new draft; when the English text changes later, existing translations show **Outdated** until a translator edits them or presses *Mark still correct*.
+- **Consistency validation:** each translation is compared with English field by field. **Errors block publishing that language** (outdated; numbers such as rates that differ from English); warnings do not (different number of cards/FAQs/sections, missing or untranslated text, differing buttons/URLs/themes). Also shown in a *Translations & consistency* panel on every edit screen. Set `CONSISTENCY_BLOCK_PUBLISH=false` to turn the block off.
+- Limits: the check compares numbers and structure, it cannot judge translation quality; "untranslated" is a heuristic; scheduled publishing is blocked by the same rules.
+
+### SEO management (meta titles and descriptions)
+
+- **Where editors manage it:** every page type has a `seo` block (meta title, meta description, canonical URL, noindex, share image). Listing pages (Products, News, Promotions, Rates) and site-wide defaults (site name, title template `{title} | {siteName}`, default description and share image) are in the **SEO settings** content type, per language.
+- **SEO manager (admin menu):** audits every page in every language (missing, too short/long, duplicated, untranslated titles and descriptions; noindex flags), with a search-result preview, live character counters and *Save as draft*. Edits go through the normal draft → review → approval → publish workflow, version history and audit log.
+- **On the website:** every page's `<title>`, description, canonical URL, `hreflang` alternates (en/si/ta/x-default), robots (noindex) and Open Graph/Twitter tags are built from the CMS values, falling back to the item's own title/summary and then the site defaults. Language-fallback pages point their canonical URL at the English page.
+- Limits: lengths are character counts (search engines truncate by pixel width); the audit shows the *draft* of each page; sitemap.xml / robots.txt are not part of this feature.
+
 Then run the automated checks:
 
 ```bash

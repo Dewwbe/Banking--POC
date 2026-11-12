@@ -33,7 +33,7 @@ async function ensureLocales(strapi: Core.Strapi) {
 }
 
 /** Create a document in en, add si/ta versions, optionally mark approved (system seed) and publish. */
-async function seedDoc(strapi: Core.Strapi, uid: string, byLocale: Record<string, any>, publish: boolean) {
+export async function seedDoc(strapi: Core.Strapi, uid: string, byLocale: Record<string, any>, publish: boolean) {
   const docs: any = (strapi.documents as any)(uid);
   const created = await docs.create({ locale: 'en', data: byLocale.en });
   for (const loc of ['si', 'ta']) {

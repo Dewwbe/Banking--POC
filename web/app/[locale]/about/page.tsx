@@ -1,7 +1,17 @@
+import type { Metadata } from 'next';
+import { buildMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { Blocks } from '@/components/Blocks';
+import { FallbackNotice } from '@/components/FallbackNotice';
 import { SectionHeading, Sections } from '@/components/Sections';
 import { getAbout, isLocale, mediaUrl } from '@/lib/strapi';
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const a = await getAbout(locale);
+  return buildMetadata({ locale, path: '/about', title: a?.title, seo: a?.seo, fallbackFrom: a?._fallbackFrom });
+}
 
 export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -11,6 +21,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
 
   return (
     <>
+      <FallbackNotice locale={locale} from={a._fallbackFrom} />
       <header className="rounded-3xl bg-gradient-to-br from-[#4f2c85] via-brand to-lilac p-8 text-white sm:p-12">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">{a.title}</h1>
         {a.mission && <p className="mt-4 max-w-2xl text-xl font-medium">{a.mission}</p>}

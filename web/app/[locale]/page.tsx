@@ -1,7 +1,18 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Banner, ProductCard, SectionHeading, Sections } from '@/components/Sections';
+import type { Metadata } from 'next';
+import { buildMetadata } from '@/lib/seo';
+import { Banners } from '@/components/Banners';
+import { FallbackNotice } from '@/components/FallbackNotice';
 import { getHome, isLocale } from '@/lib/strapi';
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const h = await getHome(locale);
+  return buildMetadata({ locale, path: '', title: h?.title, seo: h?.seo, fallbackFrom: h?._fallbackFrom });
+}
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -11,6 +22,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   return (
     <>
+      <FallbackNotice locale={locale} from={home._fallbackFrom} />
+      <Banners locale={locale} placement="home_top" />
       <Banner banner={home.hero} />
       {home.featuredProducts?.length > 0 && (
         <section>
@@ -23,6 +36,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
         </section>
       )}
+      <Banners locale={locale} placement="home_secondary" />
       <Sections sections={home.sections} />
     </>
   );

@@ -54,34 +54,72 @@ const SECTIONS_POPULATE = {
   },
 };
 
+// ------------------------------------------------------------------------------------------------
+// Language fallback. A page/item that is not PUBLISHED in the requested language is served from the fallback
+// language instead (Sinhala/Tamil -> English) and flagged with `_fallbackFrom`, so the page can tell visitors.
+// Only published content is ever used, so drafts and unpublished items still 404 / stay hidden.
+// ------------------------------------------------------------------------------------------------
+export const FALLBACK: Record<Locale, Locale[]> = { en: [], si: ['en'], ta: ['en'] };
+export type Fallback = { _fallbackFrom?: Locale };
+
+async function firstAvailable<T>(locale: Locale, load: (l: Locale) => Promise<T | null>): Promise<(T & Fallback) | null> {
+  const own = await load(locale);
+  if (own) return own;
+  for (const l of FALLBACK[locale]) {
+    const alt = await load(l);
+    if (alt) return { ...alt, _fallbackFrom: l };
+  }
+  return null;
+}
+
+/** The requested language's items plus, for items that have no published version in it, the fallback version. */
+async function mergeFallback<T extends { documentId: string }>(locale: Locale, load: (l: Locale) => Promise<T[] | null>, sort?: (a: T, b: T) => number): Promise<Array<T & Fallback>> {
+  const out: Array<T & Fallback> = [...((await load(locale)) ?? [])];
+  const seen = new Set(out.map((x) => x.documentId));
+  for (const l of FALLBACK[locale]) {
+    for (const x of (await load(l)) ?? []) {
+      if (seen.has(x.documentId)) continue;
+      seen.add(x.documentId);
+      out.push({ ...x, _fallbackFrom: l });
+    }
+  }
+  return sort ? out.sort(sort) : out;
+}
+
 export const getHome = (locale: Locale) =>
-  strapiGet<any>('home', {
-    locale,
+  firstAvailable(locale, (l) => strapiGet<any>('home', {
+    locale: l,
     populate: {
       hero: { populate: '*' },
       featuredProducts: { fields: ['name', 'slug', 'summary', 'interestRate'] },
       sections: SECTIONS_POPULATE,
       seo: { populate: '*' },
     },
-  }, ['strapi:home', 'strapi:product']);
+  }, ['strapi:home', 'strapi:product']));
 
 export const getAbout = (locale: Locale) =>
-  strapiGet<any>('about-us', { locale, populate: { values: { populate: '*' }, images: true, sections: SECTIONS_POPULATE, seo: { populate: '*' } } }, ['strapi:about-us']);
+  firstAvailable(locale, (l) => strapiGet<any>('about-us', { locale: l, populate: { values: { populate: '*' }, images: true, sections: SECTIONS_POPULATE, seo: { populate: '*' } } }, ['strapi:about-us']));
 
 export const getContact = (locale: Locale) =>
-  strapiGet<any>('contact-us', { locale, populate: { branches: true, sections: SECTIONS_POPULATE, seo: { populate: '*' } } }, ['strapi:contact-us']);
+  firstAvailable(locale, (l) => strapiGet<any>('contact-us', { locale: l, populate: { branches: true, sections: SECTIONS_POPULATE, seo: { populate: '*' } } }, ['strapi:contact-us']));
 
 export const getProducts = (locale: Locale) =>
-  strapiGet<any[]>('products', { locale, sort: ['name:asc'], fields: ['name', 'slug', 'category', 'summary', 'interestRate', 'rateEffectiveDate'], pagination: { pageSize: 100 } }, ['strapi:product']);
+  mergeFallback(locale,
+    (l) => strapiGet<any[]>('products', { locale: l, sort: ['name:asc'], fields: ['name', 'slug', 'category', 'summary', 'interestRate', 'rateEffectiveDate'], pagination: { pageSize: 100 } }, ['strapi:product']),
+    (a, b) => String(a.name).localeCompare(String(b.name)));
 
-export const getProduct = async (locale: Locale, slug: string) =>
-  (await strapiGet<any[]>('products', { locale, filters: { slug: { $eq: slug } }, populate: { benefits: true, faqs: true, keyFactsDocument: true, heroImage: true, seo: { populate: '*' } } }, ['strapi:product']))?.[0] ?? null;
+export const getProduct = (locale: Locale, slug: string) =>
+  firstAvailable(locale, async (l) =>
+    (await strapiGet<any[]>('products', { locale: l, filters: { slug: { $eq: slug } }, populate: { benefits: true, faqs: true, keyFactsDocument: true, heroImage: true, seo: { populate: '*' } } }, ['strapi:product']))?.[0] ?? null);
 
 export const getNewsList = (locale: Locale) =>
-  strapiGet<any[]>('news-articles', { locale, sort: ['publicationDate:desc'], fields: ['title', 'slug', 'category', 'excerpt', 'publicationDate'], pagination: { pageSize: 50 } }, ['strapi:news-article']);
+  mergeFallback(locale,
+    (l) => strapiGet<any[]>('news-articles', { locale: l, sort: ['publicationDate:desc'], fields: ['title', 'slug', 'category', 'excerpt', 'publicationDate'], pagination: { pageSize: 50 } }, ['strapi:news-article']),
+    (a, b) => String(b.publicationDate).localeCompare(String(a.publicationDate)));
 
-export const getNews = async (locale: Locale, slug: string) =>
-  (await strapiGet<any[]>('news-articles', { locale, filters: { slug: { $eq: slug } }, populate: { coverImage: true, seo: { populate: '*' } } }, ['strapi:news-article']))?.[0] ?? null;
+export const getNews = (locale: Locale, slug: string) =>
+  firstAvailable(locale, async (l) =>
+    (await strapiGet<any[]>('news-articles', { locale: l, filters: { slug: { $eq: slug } }, populate: { coverImage: true, seo: { populate: '*' } } }, ['strapi:news-article']))?.[0] ?? null);
 
 /**
  * Promotions: filtered by date window on the API AND re-checked here, so an expired promotion disappears
@@ -90,12 +128,68 @@ export const getNews = async (locale: Locale, slug: string) =>
  */
 export const getPromotions = async (locale: Locale) => {
   const now = new Date(Math.floor(Date.now() / 60_000) * 60_000).toISOString();
-  const list = await strapiGet<any[]>('promotions', {
-    locale,
-    filters: { startDate: { $lte: now }, endDate: { $gt: now } },
-    sort: ['startDate:desc'],
-    populate: { banner: true, cta: true },
-  }, ['strapi:promotion']);
+  const list = await mergeFallback(locale,
+    (l) => strapiGet<any[]>('promotions', {
+      locale: l,
+      filters: { startDate: { $lte: now }, endDate: { $gt: now } },
+      sort: ['startDate:desc'],
+      populate: { banner: true, cta: true },
+    }, ['strapi:promotion']),
+    (a, b) => String(b.startDate).localeCompare(String(a.startDate)));
   const t = Date.now();
-  return (list ?? []).filter((p) => Date.parse(p.startDate) <= t && Date.parse(p.endDate) > t);
+  return list.filter((p) => Date.parse(p.startDate) <= t && Date.parse(p.endDate) > t);
 };
+
+/** Banners for one placement. Date window applied on the API and re-checked here (same defence as promotions). */
+export const getBanners = async (locale: Locale, placement: string) => {
+  const now = new Date(Math.floor(Date.now() / 60_000) * 60_000).toISOString();
+  const list = await mergeFallback(locale,
+    (l) => strapiGet<any[]>('banners', {
+      locale: l,
+      filters: {
+        placement: { $eq: placement },
+        $and: [
+          { $or: [{ startDate: { $null: true } }, { startDate: { $lte: now } }] },
+          { $or: [{ endDate: { $null: true } }, { endDate: { $gt: now } }] },
+        ],
+      },
+      sort: ['sortOrder:asc'],
+      populate: { image: true, cta: true },
+    }, ['strapi:banner']),
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const t = Date.now();
+  return list
+    .filter((b) => (!b.startDate || Date.parse(b.startDate) <= t) && (!b.endDate || Date.parse(b.endDate) > t))
+    .map((b) => ({ ...b, cta: b.cta ? [b.cta] : [] })); // <Banner> expects a list of buttons
+};
+
+export type MenuNode = { documentId: string; label: string; url: string; openInNewTab?: boolean; children: MenuNode[] };
+
+/** Published menu items for header/footer as a tree (one level of nesting). Items missing in this language use the fallback language's label. Empty → the layout falls back to its built-in links. */
+export const getMenu = async (locale: Locale, location: 'header' | 'footer'): Promise<MenuNode[]> => {
+  const list = await mergeFallback(locale,
+    (l) => strapiGet<any[]>('menu-items', {
+      locale: l, filters: { location: { $eq: location } }, sort: ['sortOrder:asc'], populate: { parent: { fields: ['documentId'] } }, pagination: { pageSize: 100 },
+    }, ['strapi:menu-item']),
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const nodes = new Map<string, MenuNode>(list.map((i) => [i.documentId, { documentId: i.documentId, label: i.label, url: i.url, openInNewTab: i.openInNewTab, children: [] }]));
+  const roots: MenuNode[] = [];
+  for (const i of list) {
+    const node = nodes.get(i.documentId)!;
+    const parent = i.parent?.documentId ? nodes.get(i.parent.documentId) : null;
+    if (parent) parent.children.push(node);
+    else roots.push(node);
+  }
+  return roots;
+};
+
+export const getRates = (locale: Locale) =>
+  mergeFallback(locale,
+    (l) => strapiGet<any[]>('rates', {
+      locale: l, sort: ['sortOrder:asc', 'name:asc'], populate: { product: { fields: ['slug'] } }, pagination: { pageSize: 200 },
+    }, ['strapi:rate']),
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || String(a.name).localeCompare(String(b.name)));
+
+/** Site-wide SEO settings (site name, title template, defaults, listing-page meta data), with language fallback. */
+export const getSeoSettings = (locale: Locale) =>
+  firstAvailable(locale, (l) => strapiGet<any>('seo-setting', { locale: l, populate: { defaultShareImage: true, listingPages: true } }, ['strapi:seo-setting']));

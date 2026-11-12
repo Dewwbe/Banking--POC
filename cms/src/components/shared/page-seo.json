@@ -1,0 +1,35 @@
+{
+  "collectionName": "components_shared_page_seos",
+  "info": {
+    "displayName": "Page SEO",
+    "icon": "search",
+    "description": "Meta title and description for one listing page"
+  },
+  "options": {},
+  "attributes": {
+    "pageKey": {
+      "type": "enumeration",
+      "enum": [
+        "products",
+        "news",
+        "promotions",
+        "rates"
+      ],
+      "required": true
+    },
+    "metaTitle": {
+      "type": "string",
+      "required": true,
+      "maxLength": 60
+    },
+    "metaDescription": {
+      "type": "text",
+      "required": true,
+      "maxLength": 160
+    },
+    "noIndex": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
