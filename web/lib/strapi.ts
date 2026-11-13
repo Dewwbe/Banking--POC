@@ -51,6 +51,10 @@ const SECTIONS_POPULATE = {
     'sections.cta-block': { populate: '*' },
     'sections.rich-text': { populate: '*' },
     'sections.legal-notice': { populate: '*' },
+    'sections.campaign-hero': { populate: { image: true, cta: true } },
+    'sections.offer-highlights': { populate: '*' },
+    'sections.how-to-claim': { populate: '*' },
+    'sections.offer-terms': { populate: '*' },
   },
 };
 
@@ -133,7 +137,7 @@ export const getPromotions = async (locale: Locale) => {
       locale: l,
       filters: { startDate: { $lte: now }, endDate: { $gt: now } },
       sort: ['startDate:desc'],
-      populate: { banner: true, cta: true },
+      populate: { banner: true, cta: true, sections: SECTIONS_POPULATE },
     }, ['strapi:promotion']),
     (a, b) => String(b.startDate).localeCompare(String(a.startDate)));
   const t = Date.now();

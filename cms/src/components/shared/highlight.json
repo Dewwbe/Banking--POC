@@ -1,0 +1,10 @@
+{
+  "collectionName": "components_shared_highlights",
+  "options": {},
+  "info": { "displayName": "Highlight", "icon": "star", "description": "A key figure with a label, e.g. 8.5% p.a." },
+  "attributes": {
+    "value": { "type": "string", "required": true, "maxLength": 30 },
+    "label": { "type": "string", "required": true, "maxLength": 60 },
+    "note": { "type": "string", "maxLength": 120 }
+  }
+}

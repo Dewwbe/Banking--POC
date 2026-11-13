@@ -5,6 +5,14 @@ import { mediaUrl } from '@/lib/strapi';
 
 /** Renders reusable Strapi components (Banner, Card group, FAQ group, CTA block, Rich text, Legal notice). */
 
+/** Marks a CMS CTA so the analytics tracker (components/Tracker.tsx) can report its clicks. */
+export const ctaAttrs = (cta: any) => ({
+  "data-cta": "1",
+  "data-cta-id": cta?.trackingId || undefined,
+  "data-cta-label": cta?.label,
+  "data-cta-key": cta?.keyConversion ? "1" : undefined,
+});
+
 export function Cta({ cta }: { cta?: any }) {
   if (!cta) return null;
   const style =
@@ -13,7 +21,7 @@ export function Cta({ cta }: { cta?: any }) {
     : 'bg-white text-brand-dark hover:bg-lilac-soft';
   const link = cta.variant === 'link';
   return (
-    <Link href={cta.url} target={cta.openInNewTab ? '_blank' : undefined}
+    <Link href={cta.url} target={cta.openInNewTab ? '_blank' : undefined} {...ctaAttrs(cta)}
       className={`inline-flex items-center gap-1 font-semibold transition ${link ? '' : 'rounded-full px-6 py-2.5'} ${style}`}>
       {cta.label}{link && <span aria-hidden>→</span>}
     </Link>
@@ -24,7 +32,7 @@ export function Cta({ cta }: { cta?: any }) {
 export function CtaSolid({ cta }: { cta?: any }) {
   if (!cta) return null;
   return (
-    <Link href={cta.url} target={cta.openInNewTab ? '_blank' : undefined}
+    <Link href={cta.url} target={cta.openInNewTab ? '_blank' : undefined} {...ctaAttrs(cta)}
       className="inline-flex items-center rounded-full bg-brand px-6 py-2.5 font-semibold text-white transition hover:bg-brand-dark">
       {cta.label}
     </Link>
@@ -64,6 +72,28 @@ export function Banner({ banner }: { banner: any }) {
           <img src={img} alt={banner.imageAlt ?? banner.image?.alternativeText ?? ''}
             className="max-h-80 w-full rounded-2xl object-cover shadow-xl" />
         )}
+      </div>
+    </section>
+  );
+}
+
+/** Campaign banner: badge, heading, optional end date, image and one CTA. */
+export function CampaignHero({ block }: { block: any }) {
+  const img = mediaUrl(block?.image);
+  const light = block?.theme === 'light';
+  const dark = block?.theme === 'dark';
+  const bg = light ? 'border border-line bg-white text-ink' : dark ? 'bg-ink text-white' : 'bg-gradient-to-br from-[#4f2c85] via-brand to-lilac text-white';
+  return (
+    <section className={`relative overflow-hidden rounded-3xl ${bg}`}>
+      <div className={`grid items-center gap-8 p-8 sm:p-12 ${img ? 'md:grid-cols-2' : ''}`}>
+        <div>
+          {block?.badge && <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${light ? 'bg-lilac-soft text-brand-dark' : 'bg-white/20'}`}>{block.badge}</span>}
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">{block?.heading}</h2>
+          {block?.subheading && <p className={`mt-3 max-w-xl text-lg ${light ? 'text-muted' : 'text-white/90'}`}>{block.subheading}</p>}
+          {block?.endsAt && <p className="mt-3 text-sm font-semibold">Ends {new Date(block.endsAt).toLocaleDateString()}</p>}
+          {block?.cta && <div className="mt-6">{light ? <CtaSolid cta={block.cta} /> : <Cta cta={block.cta} />}</div>}
+        </div>
+        {img && <img src={img} alt={block.imageAlt ?? block.image?.alternativeText ?? ''} className="max-h-80 w-full rounded-2xl object-cover shadow-xl" />}
       </div>
     </section>
   );
@@ -142,6 +172,50 @@ export function Sections({ sections }: { sections?: any[] }) {
                 <h2 className="relative text-2xl font-bold sm:text-3xl">{s.heading}</h2>
                 {s.text && <p className="relative mt-2 max-w-2xl text-white/90">{s.text}</p>}
                 <div className="relative mt-6"><Cta cta={s.cta} /></div>
+              </section>
+            );
+          case 'sections.campaign-hero':
+            return <CampaignHero key={i} block={s} />;
+          case 'sections.offer-highlights':
+            return (
+              <section key={i}>
+                {s.heading && <SectionHeading>{s.heading}</SectionHeading>}
+                <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {(s.items ?? []).map((h: any, j: number) => (
+                    <div key={j} className="rounded-2xl border border-line bg-white p-6 text-center shadow-sm">
+                      <dt className="text-sm font-semibold text-muted">{h.label}</dt>
+                      <dd className="mt-1 text-4xl font-extrabold text-brand">{h.value}</dd>
+                      {h.note && <dd className="mt-2 text-xs text-muted">{h.note}</dd>}
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            );
+          case 'sections.how-to-claim':
+            return (
+              <section key={i} className="rounded-3xl border border-line bg-white p-6 sm:p-10">
+                {s.heading && <SectionHeading>{s.heading}</SectionHeading>}
+                <ol className="space-y-5">
+                  {(s.steps ?? []).map((st: any, j: number) => (
+                    <li key={j} className="flex gap-4">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand font-bold text-white">{j + 1}</span>
+                      <div><h3 className="font-bold">{st.title}</h3>{st.body && <p className="mt-1 text-sm text-muted">{st.body}</p>}</div>
+                    </li>
+                  ))}
+                </ol>
+                {s.cta && <div className="mt-8"><CtaSolid cta={s.cta} /></div>}
+              </section>
+            );
+          case 'sections.offer-terms':
+            return (
+              <section key={i} className="rounded-2xl border border-line bg-lilac-soft/60 p-6 text-sm text-ink">
+                <h2 className="mb-1 font-semibold text-brand-dark">{s.title}</h2>
+                {(s.validFrom || s.validUntil) && (
+                  <p className="mb-2 text-xs font-semibold text-muted">
+                    {s.validFrom && `Valid from ${new Date(s.validFrom).toLocaleDateString()}`}{s.validFrom && s.validUntil && ' · '}{s.validUntil && `until ${new Date(s.validUntil).toLocaleDateString()}`}
+                  </p>
+                )}
+                <Blocks content={s.body} />
               </section>
             );
           case 'sections.rich-text':

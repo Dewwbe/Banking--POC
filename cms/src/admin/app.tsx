@@ -1,5 +1,5 @@
 import type { StrapiApp } from '@strapi/strapi/admin';
-import { ClockCounterClockwise, Layout, Mail, PuzzlePiece, Clock, Globe, Search } from '@strapi/icons';
+import { ClockCounterClockwise, Layout, Mail, PuzzlePiece, Clock, Globe, Search, ChartBubble } from '@strapi/icons';
 import { injectMicrosoftSignIn } from './sso-button';
 import { VersionHistory } from './components/VersionHistory';
 import { TranslationStatus } from './components/TranslationStatus';
@@ -53,6 +53,16 @@ export default {
       icon: Search,
       intlLabel: { id: 'poc.seo-manager.label', defaultMessage: 'SEO manager' },
       Component: () => import('./pages/SeoManager').then((m) => ({ default: m.SeoManager })),
+    });
+
+    // Analytics: traffic overview, top content and key-CTA conversions (src/admin/pages/AnalyticsDashboard.tsx).
+    // The report API only answers logged-in admin users that hold at least one role (src/poc/analytics.ts).
+    app.addMenuLink({
+      to: 'analytics',
+      permissions: [],
+      icon: ChartBubble,
+      intlLabel: { id: 'poc.analytics.label', defaultMessage: 'Analytics' },
+      Component: () => import('./pages/AnalyticsDashboard').then((m) => ({ default: m.AnalyticsDashboard })),
     });
 
     // Subscriber management dashboard (src/admin/pages/SubscriberDashboard.tsx). Visible only to users who may read

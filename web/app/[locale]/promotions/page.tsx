@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { Banners } from '@/components/Banners';
 import { LangTag } from '@/components/FallbackNotice';
 import { Blocks } from '@/components/Blocks';
-import { CtaSolid } from '@/components/Sections';
+import { CtaSolid, Sections } from '@/components/Sections';
 import { getPromotions, isLocale, mediaUrl } from '@/lib/strapi';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -43,6 +43,14 @@ export default async function PromotionsPage({ params }: { params: Promise<{ loc
         ))}
         {promos.length === 0 && <p className="text-muted">No active promotions.</p>}
       </div>
+
+      {/* Campaign pages: the pre-built blocks (campaign hero, offer highlights, how to claim, terms) editors add to a promotion */}
+      {promos.filter((p) => p.sections?.length > 0).map((p) => (
+        <div key={`${p.slug}-campaign`} id={p.slug} className="space-y-8">
+          <h2 className="text-2xl font-bold tracking-tight text-brand-dark">{p.title}</h2>
+          <Sections sections={p.sections} />
+        </div>
+      ))}
     </div>
   );
 }

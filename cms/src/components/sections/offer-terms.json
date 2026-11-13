@@ -1,0 +1,11 @@
+{
+  "collectionName": "components_sections_offer_terms",
+  "options": {},
+  "info": { "displayName": "Offer terms", "icon": "information", "description": "Eligibility and terms strip with validity dates" },
+  "attributes": {
+    "title": { "type": "string", "required": true },
+    "validFrom": { "type": "date" },
+    "validUntil": { "type": "date" },
+    "body": { "type": "blocks", "required": true }
+  }
+}

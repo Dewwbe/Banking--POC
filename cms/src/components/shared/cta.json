@@ -28,6 +28,15 @@
     "openInNewTab": {
       "type": "boolean",
       "default": false
+    },
+    "trackingId": {
+      "type": "string",
+      "maxLength": 60,
+      "regex": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "keyConversion": {
+      "type": "boolean",
+      "default": false
     }
   }
 }

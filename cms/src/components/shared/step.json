@@ -1,0 +1,9 @@
+{
+  "collectionName": "components_shared_steps",
+  "options": {},
+  "info": { "displayName": "Step", "icon": "numbered-list", "description": "One step of a how-to-claim list" },
+  "attributes": {
+    "title": { "type": "string", "required": true, "maxLength": 80 },
+    "body": { "type": "text", "maxLength": 240 }
+  }
+}

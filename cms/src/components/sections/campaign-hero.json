@@ -1,0 +1,15 @@
+{
+  "collectionName": "components_sections_campaign_heroes",
+  "options": {},
+  "info": { "displayName": "Campaign hero", "icon": "rocket", "description": "Campaign banner with a badge, end date and call to action" },
+  "attributes": {
+    "badge": { "type": "string", "maxLength": 30 },
+    "heading": { "type": "string", "required": true, "maxLength": 90 },
+    "subheading": { "type": "text", "maxLength": 240 },
+    "image": { "type": "media", "multiple": false, "allowedTypes": ["images"] },
+    "imageAlt": { "type": "string" },
+    "endsAt": { "type": "datetime" },
+    "theme": { "type": "enumeration", "enum": ["brand", "dark", "light"], "default": "brand" },
+    "cta": { "type": "component", "repeatable": false, "component": "shared.cta" }
+  }
+}

@@ -72,7 +72,11 @@
         "sections.faq-group",
         "sections.cta-block",
         "sections.rich-text",
-        "sections.legal-notice"
+        "sections.legal-notice",
+        "sections.campaign-hero",
+        "sections.offer-highlights",
+        "sections.how-to-claim",
+        "sections.offer-terms"
       ],
       "pluginOptions": {
         "i18n": {

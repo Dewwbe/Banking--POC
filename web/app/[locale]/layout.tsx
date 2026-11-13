@@ -4,6 +4,7 @@ import { buildMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubscribeForm } from '@/components/SubscribeForm';
+import { Tracker } from '@/components/Tracker';
 import { getMenu, isLocale, LOCALES, type MenuNode } from '@/lib/strapi';
 import '../globals.css';
 
@@ -76,6 +77,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
         </header>
 
         <main className="mx-auto w-full max-w-6xl flex-1 space-y-12 px-4 py-10">{children}</main>
+
+        <Tracker />
 
         <footer className="mt-8 bg-brand-dark text-white">
           <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3">

@@ -80,6 +80,49 @@ const SPECS: Spec[] = [
     empty: () => ({ heading: 'New call to action', text: '', cta: { label: 'Learn more', url: '/', variant: 'primary' } }),
   },
   {
+    uid: 'sections.campaign-hero',
+    label: 'Campaign hero',
+    hint: 'Campaign banner with badge and end date',
+    fields: [
+      { key: 'badge', label: 'Badge (e.g. Limited offer)', kind: 'text' },
+      { key: 'heading', label: 'Heading', kind: 'text' },
+      { key: 'subheading', label: 'Subheading', kind: 'textarea' },
+      { key: 'theme', label: 'Theme', kind: 'select', options: ['brand', 'dark', 'light'] },
+    ],
+    object: { key: 'cta', label: 'Button', fields: CTA_FIELDS },
+    empty: () => ({ badge: 'Limited offer', heading: 'New campaign', subheading: '', theme: 'brand', cta: { label: 'Apply now', url: '/', variant: 'primary' } }),
+  },
+  {
+    uid: 'sections.offer-highlights',
+    label: 'Offer highlights',
+    hint: 'Row of key figures (rate, bonus, fee waiver)',
+    fields: [{ key: 'heading', label: 'Heading', kind: 'text' }],
+    list: {
+      key: 'items', label: 'Highlights', item: 'Highlight', max: 4,
+      fields: [{ key: 'value', label: 'Figure (e.g. 8.5%)', kind: 'text' }, { key: 'label', label: 'Label', kind: 'text' }, { key: 'note', label: 'Small print', kind: 'text' }],
+    },
+    empty: () => ({ heading: 'Offer highlights', items: [{ value: '0%', label: 'Processing fee' }] }),
+  },
+  {
+    uid: 'sections.how-to-claim',
+    label: 'How to claim',
+    hint: 'Numbered steps with a closing button',
+    fields: [{ key: 'heading', label: 'Heading', kind: 'text' }],
+    list: {
+      key: 'steps', label: 'Steps', item: 'Step', max: 6,
+      fields: [{ key: 'title', label: 'Step', kind: 'text' }, { key: 'body', label: 'Details', kind: 'textarea' }],
+    },
+    object: { key: 'cta', label: 'Button', fields: CTA_FIELDS },
+    empty: () => ({ heading: 'How to claim', steps: [{ title: 'Step one', body: '' }], cta: { label: 'Get started', url: '/', variant: 'primary' } }),
+  },
+  {
+    uid: 'sections.offer-terms',
+    label: 'Offer terms',
+    hint: 'Eligibility and terms with validity dates',
+    fields: [{ key: 'title', label: 'Title', kind: 'text' }, { key: 'body', label: 'Terms', kind: 'blocks' }],
+    empty: () => ({ title: 'Terms and eligibility', body: textToBlocks('Terms apply.') }),
+  },
+  {
     uid: 'sections.rich-text',
     label: 'Rich text',
     hint: 'Free text section',
@@ -186,6 +229,48 @@ function Preview({ block }: { block: any }) {
     );
   }
   if (uid === 'sections.legal-notice') {
+    return (
+      <div style={{ border: '1px dashed #a5a5ba', padding: 12, borderRadius: 4 }}>
+        <div style={{ fontWeight: 700 }}>{block.title}</div>
+        <div style={{ fontSize: 12, opacity: 0.8 }}>{plainText(block.body).slice(0, 160)}</div>
+      </div>
+    );
+  }
+  if (uid === 'sections.campaign-hero') {
+    const t = THEMES[block.theme] ?? THEMES.brand;
+    return (
+      <div style={{ background: t.bg, color: t.fg, padding: 24, borderRadius: 4 }}>
+        {block.badge && <span style={{ background: 'rgba(255,255,255,.25)', borderRadius: 20, padding: '1px 10px', fontSize: 12 }}>{block.badge}</span>}
+        <div style={{ fontSize: 22, fontWeight: 700, marginTop: 6 }}>{block.heading}</div>
+        {block.subheading && <div style={{ opacity: 0.85, marginTop: 4 }}>{block.subheading}</div>}
+        {block.cta?.label && <span style={{ display: 'inline-block', marginTop: 10, border: '1px solid currentColor', borderRadius: 20, padding: '2px 12px', fontSize: 13 }}>{block.cta.label}</span>}
+      </div>
+    );
+  }
+  if (uid === 'sections.offer-highlights') {
+    return (
+      <div>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>{block.heading}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(block.items ?? []).map((h: any, i: number) => (
+            <div key={i} style={{ flex: 1, border: '1px solid #dcdce4', borderRadius: 4, padding: 10, textAlign: 'center' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#4945ff' }}>{h.value}</div>
+              <div style={{ fontSize: 12 }}>{h.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (uid === 'sections.how-to-claim') {
+    return (
+      <div>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>{block.heading}</div>
+        {(block.steps ?? []).map((s: any, i: number) => <div key={i} style={{ padding: '3px 0' }}><b>{i + 1}.</b> {s.title}</div>)}
+      </div>
+    );
+  }
+  if (uid === 'sections.offer-terms') {
     return (
       <div style={{ border: '1px dashed #a5a5ba', padding: 12, borderRadius: 4 }}>
         <div style={{ fontWeight: 700 }}>{block.title}</div>

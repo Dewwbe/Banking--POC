@@ -93,6 +93,26 @@
         }
       }
     },
+    "sections": {
+      "type": "dynamiczone",
+      "components": [
+        "shared.banner",
+        "sections.campaign-hero",
+        "sections.offer-highlights",
+        "sections.how-to-claim",
+        "sections.offer-terms",
+        "sections.card-group",
+        "sections.faq-group",
+        "sections.cta-block",
+        "sections.rich-text",
+        "sections.legal-notice"
+      ],
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
+    },
     "relatedProduct": {
       "type": "relation",
       "relation": "oneToOne",

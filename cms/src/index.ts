@@ -4,6 +4,7 @@ import { registerAdminEvents } from './poc/admin-events';
 import { registerRollback } from './poc/rollback';
 import { registerScheduleApi } from './poc/schedule';
 import { registerSeoApi } from './poc/seo';
+import { registerAnalyticsApi } from './poc/analytics';
 import { registerVersionApi } from './poc/versions';
 import { backfillSourceHash, registerTranslationApi } from './poc/translations';
 import { ensurePublicPermissions, ensureBootstrapAdmin, ensureRoles } from './poc/rbac';
@@ -28,6 +29,7 @@ export default {
     registerVersionApi(strapi);
     registerTranslationApi(strapi);
     registerSeoApi(strapi);
+    registerAnalyticsApi(strapi);
     // Everything below runs as an attributed system task, so audit entries say "system:bootstrap".
     await asSystem('bootstrap', () => setup(strapi));
   },

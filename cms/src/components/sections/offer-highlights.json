@@ -1,0 +1,9 @@
+{
+  "collectionName": "components_sections_offer_highlights",
+  "options": {},
+  "info": { "displayName": "Offer highlights", "icon": "dashboard", "description": "Row of key figures for an offer (rate, bonus, fee waiver)" },
+  "attributes": {
+    "heading": { "type": "string" },
+    "items": { "type": "component", "repeatable": true, "component": "shared.highlight", "min": 1, "max": 4 }
+  }
+}

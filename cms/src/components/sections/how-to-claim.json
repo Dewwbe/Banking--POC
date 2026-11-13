@@ -1,0 +1,10 @@
+{
+  "collectionName": "components_sections_how_to_claims",
+  "options": {},
+  "info": { "displayName": "How to claim", "icon": "numbered-list", "description": "Numbered steps for taking up an offer, with a closing button" },
+  "attributes": {
+    "heading": { "type": "string" },
+    "steps": { "type": "component", "repeatable": true, "component": "shared.step", "min": 1, "max": 6 },
+    "cta": { "type": "component", "repeatable": false, "component": "shared.cta" }
+  }
+}
