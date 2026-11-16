@@ -4,6 +4,14 @@ import { injectMicrosoftSignIn } from './sso-button';
 import { VersionHistory } from './components/VersionHistory';
 import { TranslationStatus } from './components/TranslationStatus';
 
+// White (light) interface by default. Strapi otherwise follows the operating system, which gave dark mode. This runs
+// before the admin store is created, and only when the user has not chosen a mode themselves (Profile → Interface mode).
+try {
+  if (!window.localStorage.getItem('STRAPI_THEME')) window.localStorage.setItem('STRAPI_THEME', 'light');
+} catch {
+  /* storage blocked: Strapi falls back to the system theme */
+}
+
 /**
  * Admin-panel customisation (Strapi Community has no SSO and one shared homepage):
  *  - login page: adds "Sign in with Microsoft" next to the email/password form (see src/admin/sso-button.ts);
@@ -13,6 +21,32 @@ import { TranslationStatus } from './components/TranslationStatus';
 export default {
   config: {
     locales: [],
+    // Red-and-white brand theme. Strapi keeps its neutral greys/whites for backgrounds and text; only the primary
+    // (accent) colours and the primary button colours are overridden. Light mode is white with red accents.
+    theme: {
+      light: {
+        colors: {
+          primary100: '#fdecec',
+          primary200: '#f8c4c4',
+          primary500: '#e5484d',
+          primary600: '#d32f2f',
+          primary700: '#b71c1c',
+          buttonPrimary500: '#e5484d',
+          buttonPrimary600: '#d32f2f',
+        },
+      },
+      dark: {
+        colors: {
+          primary100: '#2e1315',
+          primary200: '#5c1f23',
+          primary500: '#f0555a',
+          primary600: '#e5484d',
+          primary700: '#ff8a8e',
+          buttonPrimary500: '#e5484d',
+          buttonPrimary600: '#d32f2f',
+        },
+      },
+    },
   },
 
   register(app: StrapiApp) {
